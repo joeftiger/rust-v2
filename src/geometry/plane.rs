@@ -17,6 +17,7 @@ impl Plane {
     }
 }
 
+#[typetag::serde]
 impl Geometry for Plane {
     #[inline(always)]
     fn contains(&self, _point: Vec3) -> Option<bool> {

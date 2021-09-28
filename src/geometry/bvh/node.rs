@@ -2,25 +2,19 @@ use super::{Candidate, Candidates, Item, Plane, Side};
 use crate::geometry::{Aabb, Geometry, Ray};
 use crate::Float;
 
-use std::collections::HashSet;
-use std::sync::Arc;
-
 const K_T: Float = 15.0;
 const K_I: Float = 20.0;
 
 #[derive(Clone)]
-pub struct InternalNode<T> {
+pub struct InternalNode {
     left_space: Aabb,
-    left_node: Node<T>,
+    left_node: Node,
     right_space: Aabb,
-    right_node: Node<T>,
+    right_node: Node,
 }
 
-impl<T> InternalNode<T>
-where
-    T: Clone,
-{
-    fn new(left_space: Aabb, left_node: Node<T>, right_space: Aabb, right_node: Node<T>) -> Self {
+impl InternalNode {
+    fn new(left_space: Aabb, left_node: Node, right_space: Aabb, right_node: Node) -> Self {
         Self {
             left_space,
             left_node,
@@ -31,17 +25,14 @@ where
 }
 
 #[derive(Clone)]
-pub enum Node<T> {
-    Leaf { items: HashSet<Arc<Item<T>>> },
-    Node { node: Box<InternalNode<T>> },
+pub enum Node {
+    Leaf { items: Vec<Item> },
+    Node { node: Box<InternalNode> },
 }
 
-impl<T> Node<T>
-where
-    T: Clone,
-{
-    pub fn new(space: Aabb, candidates: Candidates<T>, n: usize, sides: &mut Vec<Side>) -> Self {
-        let (cost, best_index, n_l, n_r) = Self::partition(n, &space, &candidates);
+impl Node {
+    pub fn new(space: Aabb, candidates: Candidates, n: usize, sides: &mut Vec<Side>) -> Self {
+        let (cost, best_index, n_l, n_r) = Self::partition(n, space, &candidates);
 
         // Check that the cost of the splitting is not higher than the cost of the leaf.
         if cost > K_I * n as Float {
@@ -50,7 +41,7 @@ where
                 .iter()
                 .filter_map(|c| {
                     if c.is_left && c.dimension() == 0 {
-                        Some(c.item.clone())
+                        Some(c.item)
                     } else {
                         None
                     }
@@ -60,7 +51,7 @@ where
             return Self::Leaf { items };
         }
 
-        let (left_space, right_space) = Self::split_space(&space, &candidates[best_index].plane);
+        let (left_space, right_space) = Self::split_space(space, candidates[best_index].plane);
         let (left_candidates, right_candidates) = Self::classify(candidates, best_index, sides);
 
         let inner_node = InternalNode::new(
@@ -75,11 +66,7 @@ where
         }
     }
 
-    fn partition(
-        n: usize,
-        space: &Aabb,
-        candidates: &[Candidate<T>],
-    ) -> (Float, usize, usize, usize) {
+    fn partition(n: usize, space: Aabb, candidates: &[Candidate]) -> (Float, usize, usize, usize) {
         let mut best_cost = Float::INFINITY;
         let mut best_candidate_index = 0;
 
@@ -101,7 +88,7 @@ where
             }
 
             // Compute the cost of the split and update the best split
-            let cost = Self::cost(&candidate.plane, space, n_l[dim], n_r[dim]);
+            let cost = Self::cost(candidate.plane, space, n_l[dim], n_r[dim]);
             if cost < best_cost {
                 best_cost = cost;
                 best_candidate_index = i;
@@ -117,7 +104,7 @@ where
         (best_cost, best_candidate_index, best_n_l, best_n_r)
     }
 
-    fn cost(p: &Plane, v: &Aabb, n_l: usize, n_r: usize) -> Float {
+    fn cost(p: Plane, v: Aabb, n_l: usize, n_r: usize) -> Float {
         let (left, right) = Self::split_space(v, p);
 
         let volume_left = left.volume();
@@ -142,9 +129,9 @@ where
                         + n_r as Float * volume_right / total_volume))
     }
 
-    fn split_space(space: &Aabb, plane: &Plane) -> (Aabb, Aabb) {
-        let mut left = *space;
-        let mut right = *space;
+    fn split_space(space: Aabb, plane: Plane) -> (Aabb, Aabb) {
+        let mut left = space;
+        let mut right = space;
         match plane {
             Plane::X(x) => {
                 let clamp = x.clamp(space.min.x, space.max.x);
@@ -166,10 +153,10 @@ where
     }
 
     fn classify(
-        candidates: Candidates<T>,
+        candidates: Candidates,
         best_index: usize,
         sides: &mut Vec<Side>,
-    ) -> (Candidates<T>, Candidates<T>) {
+    ) -> (Candidates, Candidates) {
         // Step 1: Udate sides to classify items
         Self::classify_items(&candidates, best_index, sides);
 
@@ -180,7 +167,7 @@ where
     /// Step 1 of classify.
     /// Given a candidate list and a splitting candidate identify wich items are part of the
     /// left, right and both subspaces.
-    fn classify_items(candidates: &[Candidate<T>], best_index: usize, sides: &mut Vec<Side>) {
+    fn classify_items(candidates: &[Candidate], best_index: usize, sides: &mut Vec<Side>) {
         let best_dimension = candidates[best_index].dimension();
         for i in 0..(best_index + 1) {
             if candidates[i].dimension() == best_dimension {
@@ -198,11 +185,8 @@ where
         }
     }
 
-    // Step 2: Splicing candidates left and right subspace given items sides
-    fn splicing_candidates(
-        mut candidates: Candidates<T>,
-        sides: &[Side],
-    ) -> (Candidates<T>, Candidates<T>) {
+    /// Step 2: Splicing candidates left and right subspace given items sides
+    fn splicing_candidates(mut candidates: Candidates, sides: &[Side]) -> (Candidates, Candidates) {
         let mut left_candidates = Candidates::with_capacity(candidates.len() / 2);
         let mut right_candidates = Candidates::with_capacity(candidates.len() / 2);
 
@@ -219,9 +203,9 @@ where
         (left_candidates, right_candidates)
     }
 
-    pub fn intersect(&self, ray: Ray, intersect_items: &mut HashSet<Arc<Item<T>>>) {
+    pub fn intersect(&self, ray: Ray, intersect_items: &mut Vec<u32>) {
         match self {
-            Self::Leaf { items } => intersect_items.extend(items.clone()),
+            Self::Leaf { items } => intersect_items.extend(items.iter().map(|i| i.value)),
             Self::Node { node } => {
                 if node.left_space.intersects(ray) {
                     node.left_node.intersect(ray, intersect_items);

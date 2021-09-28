@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Sphere {
-    center: Vec3,
-    radius: Float,
+    pub center: Vec3,
+    pub radius: Float,
 }
 
 impl Sphere {
@@ -22,6 +22,7 @@ impl Sphere {
     }
 }
 
+#[typetag::serde]
 impl Geometry for Sphere {
     fn contains(&self, point: Vec3) -> Option<bool> {
         Some((point - self.center).magnitude2() <= self.radius2())

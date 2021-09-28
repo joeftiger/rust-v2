@@ -5,9 +5,9 @@ pub use point::*;
 pub use ray::*;
 pub use sphere::*;
 
+use crate::util::floats::BIG_EPSILON;
 use crate::{Float, Vec3};
 use cgmath::InnerSpace;
-use crate::util::floats::BIG_EPSILON;
 
 pub mod aabb;
 pub mod bvh;
@@ -27,7 +27,6 @@ pub const UNIT_VECTORS: [Vec3; 6] = [
     Vec3 { x:  0.0, y:  0.0, z:  1.0 },
     Vec3 { x:  0.0, y:  0.0, z: -1.0 },
 ];
-
 
 #[inline]
 fn min2(a: Vec3, b: Vec3) -> Vec3 {
@@ -82,21 +81,20 @@ fn abs(v: Vec3) -> Vec3 {
 /// direction.
 ///
 /// # Constraints
-/// * `point` - ALl values should be finite (neither infinite nor `NaN`).
-/// * `normal` - All values should be finite.
+/// * `point`: ALl values should be finite (neither infinite nor `NaN`).
+/// * `normal`: All values should be finite.
 ///              Should be normalized.
-/// * `direction` - Should be finite.
+/// * `direction`: Should be finite.
 ///                 (Does not need to be normalized.)
 ///
 /// # Arguments
-/// * `point` - The starting point
-/// * `normal` - The normal vector to offset towards
-/// * `direction` - The direction helper to decide whether to invert the normal
+/// * `point`: The starting point
+/// * `normal`: The normal vector to offset towards
+/// * `direction`: The direction helper to decide whether to invert the normal
 ///
 /// # Returns
 /// * The offset point
 pub fn offset_point(point: Vec3, normal: Vec3, direction: Vec3) -> Vec3 {
-
     let offset = if direction.dot(normal) >= 0.0 {
         normal * BIG_EPSILON
     } else {
@@ -114,16 +112,16 @@ pub fn offset_point(point: Vec3, normal: Vec3, direction: Vec3) -> Vec3 {
 /// Otherwise, the opposite normal will be used.
 ///
 /// # Constraints
-/// * `point` - ALl values should be finite (neither infinite nor `NaN`).
-/// * `normal` - All values should be finite.
+/// * `point`: ALl values should be finite (neither infinite nor `NaN`).
+/// * `normal`: All values should be finite.
 ///              Should be normalized.
-/// * `direction` - Should be finite.
+/// * `direction`: Should be finite.
 ///                 Should be normalized.
 ///
 /// # Arguments
-/// * `point` - The starting point
-/// * `normal` - The normal vector to offset towards
-/// * `direction` - The direction of the ray
+/// * `point`: The starting point
+/// * `normal`: The normal vector to offset towards
+/// * `direction`: The direction of the ray
 ///
 /// # Returns
 /// * Ray from this intersection, offset by an epsilon
@@ -142,15 +140,15 @@ pub fn offset_ray_towards(point: Vec3, normal: Vec3, direction: Vec3) -> Ray {
 /// Otherwise, the opposite normal will be used.
 ///
 /// # Constraints
-/// * `point` - ALl values should be finite (neither infinite nor `NaN`).
-/// * `normal` - All values should be finite.
+/// * `point`: ALl values should be finite (neither infinite nor `NaN`).
+/// * `normal`: All values should be finite.
 ///              Should be normalized.
-/// * `target` - Should be finite.
+/// * `target`: Should be finite.
 ///
 /// # Arguments
-/// * `point` - The starting point
-/// * `normal` - The normal vector to offset towards
-/// * `target` - The target position
+/// * `point`: The starting point
+/// * `normal`: The normal vector to offset towards
+/// * `target`: The target position
 ///
 /// # Returns
 /// * Ray from this intersection to the target, offset by an epsilon
@@ -168,13 +166,13 @@ pub fn offset_ray_to(point: Vec3, normal: Vec3, target: Vec3) -> Ray {
 /// * `frame.z_axis`: towards you
 ///
 /// # Constraints
-/// * `theta` - Should be within `[0, 2π]`.
-/// * `phi` - Should be within `[0, π]`.
+/// * `theta`: Should be within `[0, 2π]`.
+/// * `phi`: Should be within `[0, π]`.
 ///
 /// # Arguments
-/// * `theta` - The angle between the `z`-axis and the spherical direction in the `zx` plane
-/// * `phi` - The angle between the  `y`-axis and the spherical direction
-/// * `frame` - The coordinate system/frame to use
+/// * `theta`: The angle between the `z`-axis and the spherical direction in the `zx` plane
+/// * `phi`: The angle between the  `y`-axis and the spherical direction
+/// * `frame`: The coordinate system/frame to use
 ///
 /// # Returns
 /// * The corresponding cartesian vector
@@ -191,21 +189,21 @@ pub fn spherical_to_cartesian_frame(theta: Float, phi: Float, frame: &Coordinate
 /// * `frame.z_axis`: towards you
 ///
 /// To make below descriptions easier, we define the following:
-/// * `theta` - The angle between the `z`-axis and the spherical direction in the `zx` plane.
-/// * `phi` - The angle between the  `y`-axis and the spherical direction.
+/// * `theta`: The angle between the `z`-axis and the spherical direction in the `zx` plane.
+/// * `phi`: The angle between the  `y`-axis and the spherical direction.
 ///
 /// # Constraints
-/// * `sin_theta` - Should be within `[-1, 1]`
-/// * `cos_theta` - Should be within `[-1, 1]`
-/// * `sin_phi` - Should be within `[-1, 1]`
-/// * `cos_phi` - Should be within `[-1, 1]`
+/// * `sin_theta`: Should be within `[-1, 1]`
+/// * `cos_theta`: Should be within `[-1, 1]`
+/// * `sin_phi`: Should be within `[-1, 1]`
+/// * `cos_phi`: Should be within `[-1, 1]`
 ///
 /// # Arguments
-/// * `sin_theta` - The sine of `theta`
-/// * `cos_theta` - The cosine of `theta`
-/// * `sin_phi` - The sine of `phi`
-/// * `cos_phi` - The cosine of `phi`
-/// * `frame` - The coordinate system/frame to use
+/// * `sin_theta`: The sine of `theta`
+/// * `cos_theta`: The cosine of `theta`
+/// * `sin_phi`: The sine of `phi`
+/// * `cos_phi`: The cosine of `phi`
+/// * `frame`: The coordinate system/frame to use
 ///
 /// # Returns
 /// * The corresponding cartesian vector
@@ -234,12 +232,12 @@ pub fn spherical_to_cartesian1(sin_theta: Float, cos_theta: Float, phi: Float) -
 /// * z-axis: towards you
 ///
 /// # Constraints
-/// * `theta` - Should be within `[0, 2π]`.
-/// * `phi` - Should be within `[0, π]`.
+/// * `theta`: Should be within `[0, 2π]`.
+/// * `phi`: Should be within `[0, π]`.
 ///
 /// # Arguments
-/// * `theta` - The angle between the `z`-axis and the spherical direction in the `zx` plane.
-/// * `phi` - The angle between the  `y`-axis and the spherical direction .
+/// * `theta`: The angle between the `z`-axis and the spherical direction in the `zx` plane.
+/// * `phi`: The angle between the  `y`-axis and the spherical direction .
 ///
 /// # Returns
 /// * The corresponding cartesian vector
@@ -256,20 +254,20 @@ pub fn spherical_to_cartesian(theta: Float, phi: Float) -> Vec3 {
 /// * z-axis: towards you
 ///
 /// To make below descriptions easier, we define the following:
-/// * `theta` - The angle between the `z`-axis and the spherical direction in the `zx` plane.
-/// * `phi` - The angle between the  `y`-axis and the spherical direction .
+/// * `theta`: The angle between the `z`-axis and the spherical direction in the `zx` plane.
+/// * `phi`: The angle between the  `y`-axis and the spherical direction .
 ///
 /// # Constraints
-/// * `sin_theta` - Should be within `[-1, 1]`
-/// * `cos_theta` - Should be within `[-1, 1]`
-/// * `sin_phi` - Should be within `[-1, 1]`
-/// * `cos_phi` - Should be within `[-1, 1]`
+/// * `sin_theta`: Should be within `[-1, 1]`
+/// * `cos_theta`: Should be within `[-1, 1]`
+/// * `sin_phi`: Should be within `[-1, 1]`
+/// * `cos_phi`: Should be within `[-1, 1]`
 ///
 /// # Arguments
-/// * `sin_theta` - The sine of `theta`
-/// * `cos_theta` - The cosine of `theta`
-/// * `sin_phi` - The sine of `phi`
-/// * `cos_phi` - The cosine of `phi`
+/// * `sin_theta`: The sine of `theta`
+/// * `cos_theta`: The cosine of `theta`
+/// * `sin_phi`: The sine of `phi`
+/// * `cos_phi`: The cosine of `phi`
 ///
 /// # Returns
 /// * The corresponding cartesian vector
@@ -304,17 +302,17 @@ impl CoordinateSystem {
     /// Creates a new coordinate system.
     ///
     /// # Constraints
-    /// * `x` - All values must be finite (neither infinite nor `NaN`).
+    /// * `x`: All values must be finite (neither infinite nor `NaN`).
     ///          Should be normalized.
-    /// * `y` - All values must be finite.
+    /// * `y`: All values must be finite.
     ///          Should be normalized.
-    /// * `z` - All values must be finite.
+    /// * `z`: All values must be finite.
     ///          Should be normalized.
     ///
     /// # Arguments
-    /// * `x` - The first vector
-    /// * `y` - The second vector
-    /// * `z` - The third vector
+    /// * `x`: The first vector
+    /// * `y`: The second vector
+    /// * `z`: The third vector
     pub fn new(x: Vec3, y: Vec3, z: Vec3) -> Self {
         Self {
             x_axis: x,
@@ -326,11 +324,11 @@ impl CoordinateSystem {
     /// Creates a new coordinate system around the given `x` direction vector.
     ///
     /// # Constraints
-    /// * `x_axis` - All values must be finite (neither infinite nor `NaN`).
+    /// * `x_axis`: All values must be finite (neither infinite nor `NaN`).
     ///              Should be normalized.
     ///
     /// # Arguments
-    /// * `x_axis` - The x direction vector
+    /// * `x_axis`: The x direction vector
     // TODO: Make more efficient
     pub fn from_x(x_axis: Vec3) -> Self {
         if x_axis == Vec3::unit_x() {
@@ -346,11 +344,11 @@ impl CoordinateSystem {
     /// Creates a new coordinate system around the given `y` direction vector.
     ///
     /// # Constraints
-    /// * `y_axis` - All values must be finite (neither infinite nor `NaN`).
+    /// * `y_axis`: All values must be finite (neither infinite nor `NaN`).
     ///              Should be normalized.
     ///
     /// # Arguments
-    /// * `y_axis` - The y direction vector
+    /// * `y_axis`: The y direction vector
     // TODO: Make more efficient
     pub fn from_y(y_axis: Vec3) -> Self {
         let s = if y_axis.x.abs() > y_axis.y.abs() {
@@ -366,11 +364,11 @@ impl CoordinateSystem {
     /// Creates a new coordinate system around the given `z` direction vector.
     ///
     /// # Constraints
-    /// * `z_axis` - All values must be finite (neither infinite nor `NaN`).
+    /// * `z_axis`: All values must be finite (neither infinite nor `NaN`).
     ///              Should be normalized.
     ///
     /// # Arguments
-    /// * `z_axis` - The z direction vector
+    /// * `z_axis`: The z direction vector
     // TODO: Make more efficient
     pub fn from_z(z_axis: Vec3) -> Self {
         if z_axis == Vec3::unit_z() {
@@ -400,6 +398,7 @@ impl Intersection {
     }
 }
 
+#[typetag::serde]
 pub trait Geometry {
     /// Returns whether this geometry contains the given point.
     ///

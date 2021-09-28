@@ -246,7 +246,7 @@ pub struct Mesh {
     #[serde(skip_serializing)]
     bounds: Aabb,
     #[serde(skip_serializing)]
-    bvh: Tree<Face>,
+    bvh: Tree,
 }
 
 impl Mesh {
@@ -314,7 +314,8 @@ impl Mesh {
     }
 
     pub fn build_tree(&mut self) {
-        self.bvh = Tree::new(self.faces.clone(), |f| f.bounds(&self.vertices))
+        let values: Vec<u32> = (0..self.faces.len() as u32).collect();
+        self.bvh = Tree::new(&values, |i| self.faces[i as usize].bounds(&self.vertices));
     }
 }
 
@@ -355,6 +356,7 @@ impl<'de> Deserialize<'de> for Mesh {
     }
 }
 
+#[typetag::serde]
 impl Geometry for Mesh {
     #[inline(always)]
     fn contains(&self, _point: Vec3) -> Option<bool> {
@@ -369,8 +371,8 @@ impl Geometry for Mesh {
     fn intersect(&self, mut ray: Ray) -> Option<Intersection> {
         let mut intersection = None;
 
-        for hit in self.bvh.intersect(ray) {
-            if let Some(i) = hit.intersect(self, ray) {
+        for face_hit in self.bvh.intersect(ray) {
+            if let Some(i) = self.faces[face_hit as usize].intersect(self, ray) {
                 ray.t_end = i.t;
                 intersection = Some(i);
             }
@@ -383,6 +385,6 @@ impl Geometry for Mesh {
         self.bvh
             .intersect(ray)
             .iter()
-            .any(|t| t.intersects(self, ray))
+            .any(|&i| self.faces[i as usize].intersects(self, ray))
     }
 }

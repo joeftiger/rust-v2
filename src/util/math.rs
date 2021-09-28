@@ -6,17 +6,17 @@ use crate::Float;
 /// `a`x^2 + `b`x + `c`
 ///
 /// # Constraints
-/// * `a` - Should be finite (neither infinite nor `NaN`).
-/// * `b` - Should be finite.
-/// * `c` - Should be finite.
+/// * `a`: Should be finite (neither infinite nor `NaN`).
+/// * `b`: Should be finite.
+/// * `c`: Should be finite.
 ///
 /// # Arguments
-/// * `a` - The parameter for `x^2`
-/// * `b` - The parameter for `x`
-/// * `c` - The constant parameter
+/// * `a`: The parameter for `x^2`
+/// * `b`: The parameter for `x`
+/// * `c`: The constant parameter
 ///
 /// # Returns
-/// * `Option<(f32, f32)>` - The solutions in ascending order (if any)
+/// * `Option<(f32, f32)>`: The solutions in ascending order (if any)
 #[inline]
 #[must_use]
 pub fn solve_quadratic(a: Float, b: Float, c: Float) -> Option<(Float, Float)> {

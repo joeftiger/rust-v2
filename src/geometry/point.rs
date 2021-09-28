@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Point(pub Vec3);
 
+#[typetag::serde]
 impl Geometry for Point {
     #[inline(always)]
     fn contains(&self, _point: Vec3) -> Option<bool> {

@@ -1,8 +1,15 @@
-use crate::{Vec3, Rot3, Float};
-use core::ops::Mul;
-use cgmath::{Rotation as cgRot, InnerSpace, Rotation3, One, Rad, Angle};
+pub mod bsdf;
 
-// A rotation is either
+use crate::util::mc::sample_unit_hemisphere;
+use crate::{Float, Rot3, Spectrum, Vec2, Vec3, PACKET_SIZE};
+use cgmath::{Angle, InnerSpace, One, Rad, Rotation as cgRot, Rotation3};
+use core::ops::Mul;
+#[cfg(not(feature = "f64"))]
+use std::f32::consts::FRAC_1_PI;
+#[cfg(feature = "f64")]
+use std::f64::consts::FRAC_1_PI;
+
+/// A rotation is either
 /// - not happening
 /// - flipping direction
 /// - some rotation
@@ -221,28 +228,203 @@ bitflags::bitflags! {
 }
 
 impl BxDFFlag {
+    /// Returns whether this flag is `reflective`.
     #[inline]
     pub fn reflective(&self) -> bool {
         self.contains(Self::REFLECTION)
     }
+    /// Returns whether this flag is `transmissive`.
     #[inline]
     pub fn transmissive(&self) -> bool {
         self.contains(Self::TRANSMISSION)
     }
+    /// Returns whether this flag is `diffuse`.
     #[inline]
     pub fn diffuse(&self) -> bool {
         self.contains(Self::DIFFUSE)
     }
+    /// Returns whether this flag is `glossy`.
     #[inline]
     pub fn glossy(&self) -> bool {
         self.contains(Self::GLOSSY)
     }
+    /// Returns whether this flag is `specular`.
     #[inline]
     pub fn specular(&self) -> bool {
         self.contains(Self::SPECULAR)
     }
+    /// Returns whether this flag is `non-specular`.
     #[inline]
     pub fn non_specular(&self) -> bool {
         !self.specular()
+    }
+}
+
+pub struct BxDFSample<T> {
+    pub spectrum: T,
+    pub incident: Vec3,
+    pub pdf: Float,
+    pub flag: BxDFFlag,
+}
+
+impl<T> BxDFSample<T> {
+    pub const fn new(spectrum: T, incident: Vec3, pdf: Float, flag: BxDFFlag) -> Self {
+        Self {
+            spectrum,
+            incident,
+            pdf,
+            flag,
+        }
+    }
+}
+
+pub trait BxDF {
+    /// Returns the type of this bxdf.
+    fn flag(&self) -> BxDFFlag;
+
+    /// Matches the flag to be a subset of [Self::flag].
+    #[inline]
+    fn is_flag(&self, f: BxDFFlag) -> bool {
+        let sf = self.flag();
+        sf.contains(f)
+    }
+
+    /// Evaluates the BxDF.
+    ///
+    /// # Constraints
+    /// * `incident`: All values should be finite (neither infinite nor `NaN`).
+    ///                Should be normalized.
+    /// * `outgoing`: All values should be finite.
+    ///                Should be normalized.
+    ///
+    /// # Arguments
+    /// * `incident`: The incident direction onto the intersection we evaluate
+    /// * `outgoing`: The outgoing light direction
+    fn evaluate(&self, incident: Vec3, outgoing: Vec3) -> Spectrum;
+
+    /// Evaluates the BxDF with possible spectral dependencies in a packet size of [PACKET_SIZE].
+    ///
+    /// # Constraints
+    /// * `incident`: All values should be finite (neither infinite nor `NaN`).
+    ///               Should be normalized.
+    /// * `outgoing` All values should be finite.
+    ///              Should be normalized.
+    /// * `indices`: All values should be within `[0, `[Spectrum::size]`)`.
+    ///
+    /// # Arguments
+    /// * `incident`: The incident direction onto the intersection we evaluate
+    /// * `outgoing`: The outgoing light direction
+    /// * `indices`: The indices of the spectrum to evaluate
+    fn evaluate_partial(
+        &self,
+        incident: Vec3,
+        outgoing: Vec3,
+        indices: &[usize; PACKET_SIZE],
+    ) -> [Float; PACKET_SIZE] {
+        let mut packet = [0.0; PACKET_SIZE];
+        for i in 0..PACKET_SIZE {
+            packet[i] = self.evaluate_lambda(incident, outgoing, indices[i]);
+        }
+
+        packet
+    }
+
+    /// Evaluates the BxDF with possible spectral dependencies.
+    ///
+    /// # Constraints
+    /// * `incident`: All values should be finite (neither infinite nor `NaN`).
+    ///               Should be normalized.
+    /// * `outgoing` All values should be finite.
+    ///              Should be normalized.
+    /// * `index`: Should be inside `[0, `[Spectrum::size]`)`.
+    ///
+    /// # Arguments
+    /// * `incident`: The incident direction onto the intersection we evaluate
+    /// * `outgoing`: The outgoing light direction
+    /// * `index`: The spectral index
+    fn evaluate_lambda(&self, incident: Vec3, outgoing: Vec3, index: usize) -> Float;
+
+    /// Samples the BxDF.
+    ///
+    /// # Constraints
+    /// * `outgoing`: All values should be finite.
+    ///                Should be normalized.
+    /// * `sample`: All values should be within `[0, 1]`.
+    ///
+    /// # Arguments
+    /// * `outgoing`: The outgoing light direction
+    /// * `sample`: The sample space for randomization
+    fn sample(&self, outgoing: Vec3, sample: Vec2) -> Option<BxDFSample<Spectrum>> {
+        let incident = flip_if_neg(sample_unit_hemisphere(sample));
+        let spectrum = self.evaluate(incident, outgoing);
+        let pdf = self.pdf(incident, outgoing);
+
+        Some(BxDFSample::new(spectrum, incident, pdf, self.flag()))
+    }
+
+    /// Samples the BxDF with possible spectral dependencies in a packet size of [PACKET_SIZE].
+    ///
+    /// # Constraints
+    /// * `outgoing`: All values should be finite.
+    ///                Should be normalized.
+    /// * `sample`: All values should be within `[0, 1]`.
+    ///
+    /// # Arguments
+    /// * `outgoing`: The outgoing light direction
+    /// * `sample`: The sample space for randomization
+    fn sample_partial(
+        &self,
+        outgoing: Vec3,
+        sample: Vec2,
+        indices: &[usize; PACKET_SIZE],
+    ) -> Option<BxDFSample<[Float; PACKET_SIZE]>> {
+        let incident = flip_if_neg(sample_unit_hemisphere(sample));
+        let spectrum = self.evaluate_partial(incident, outgoing, indices);
+        let pdf = self.pdf(incident, outgoing);
+
+        Some(BxDFSample::new(spectrum, incident, pdf, self.flag()))
+    }
+
+    /// Samples the BxDF with possible spectral dependencies.
+    ///
+    /// # Constraints
+    /// * `outgoing`: All values should be finite.
+    ///                Should be normalized.
+    /// * `sample`: All values should be within `[0, 1]`.
+    ///
+    /// # Arguments
+    /// * `outgoing`: The outgoing light direction
+    /// * `sample`: The sample space for randomization
+    fn sample_lambda(
+        &self,
+        outgoing: Vec3,
+        sample: Vec2,
+        index: usize,
+    ) -> Option<BxDFSample<Float>> {
+        let incident = flip_if_neg(sample_unit_hemisphere(sample));
+        let lambda = self.evaluate_lambda(incident, outgoing, index);
+        let pdf = self.pdf(incident, outgoing);
+
+        Some(BxDFSample::new(lambda, incident, pdf, self.flag()))
+    }
+
+    /// Computes the probability density function (`pdf`) for the pair of directions.
+    ///
+    /// # Constraints
+    /// * `incident`: All values should be finite (neither infinite nor `NaN`).
+    ///                Should be normalized.
+    /// * `outgoing`: All values should be finite.
+    ///                Should be normalized.
+    ///
+    /// # Arguments
+    /// * `incident`: The incident direction onto the intersection we evaluate
+    /// * `outgoing`: The outgoing light direction
+    #[inline]
+    fn pdf(&self, incident: Vec3, outgoing: Vec3) -> Float {
+        if same_hemisphere(incident, outgoing) {
+            cos_theta(incident).abs() * FRAC_1_PI
+        } else {
+            0.0
+        }
     }
 }

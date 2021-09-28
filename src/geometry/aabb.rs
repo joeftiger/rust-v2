@@ -83,7 +83,7 @@ impl Aabb {
     /// Joins this cube with another one, effectively creating a cube spanning both cubes.
     ///
     /// # Arguments
-    /// * `other` - Another cube
+    /// * `other`: Another cube
     ///
     /// # Returns
     /// * The outer join
@@ -96,7 +96,7 @@ impl Aabb {
     /// Joins this cube with a vector, effectively creating a cube spanning both.
     ///
     /// # Arguments
-    /// * `other` - a vector
+    /// * `other`: a vector
     ///
     /// # Returns
     /// * The outer join
@@ -107,6 +107,7 @@ impl Aabb {
     }
 }
 
+#[typetag::serde]
 impl Geometry for Aabb {
     fn contains(&self, point: Vec3) -> Option<bool> {
         Some(

@@ -1,6 +1,4 @@
 use crate::geometry::{Aabb, Geometry, Ray};
-use std::collections::HashSet;
-use std::sync::Arc;
 
 mod candidate;
 mod item;
@@ -14,23 +12,19 @@ use node::*;
 use plane::*;
 use side::*;
 
-pub struct Tree<T> {
-    root: Node<T>,
+pub struct Tree {
+    root: Node,
     space: Aabb,
 }
 
-impl<T> Tree<T>
-where
-    T: Clone,
-{
-    pub fn new<F: Fn(&T) -> Aabb>(values: Vec<T>, f: F) -> Self {
+impl Tree {
+    pub fn new<F: Fn(u32) -> Aabb>(values: &[u32], f: F) -> Self {
         let mut space = Aabb::empty();
-        let n = values.len();
-        let mut candidates = Candidates::with_capacity(n * 6);
+        let mut candidates = Candidates::with_capacity(values.len() as usize * 6);
 
-        values.iter().enumerate().for_each(|(id, v)| {
-            let bounds = f(v);
-            let item = Arc::new(Item::new(v.clone(), id as u32));
+        values.iter().enumerate().for_each(|(id, &value)| {
+            let bounds = f(value);
+            let item = Item::new(value, id as u32);
             candidates.append(&mut Candidate::gen_candidates(item, &bounds));
 
             space = space.join(bounds);
@@ -38,8 +32,8 @@ where
 
         candidates.sort();
 
-        let mut sides = vec![Side::Both; n];
-        let root = Node::new(space, candidates, n, &mut sides);
+        let mut sides = vec![Side::Both; values.len()];
+        let root = Node::new(space, candidates, values.len(), &mut sides);
 
         Self { root, space }
     }
@@ -49,24 +43,22 @@ where
         self.space
     }
 
-    pub fn intersect(&self, ray: Ray) -> Vec<Arc<T>> {
+    pub fn intersect(&self, ray: Ray) -> Vec<u32> {
         if self.space.intersects(ray) {
-            let mut items = HashSet::new();
+            let mut items = Vec::new();
             self.root.intersect(ray, &mut items);
 
-            items.iter().map(|i| i.value.clone()).collect()
+            items
         } else {
-            vec![]
+            Vec::new()
         }
     }
 }
 
-impl<T> Default for Tree<T> {
+impl Default for Tree {
     fn default() -> Self {
         Self {
-            root: Node::Leaf {
-                items: HashSet::new(),
-            },
+            root: Node::Leaf { items: Vec::new() },
             space: Aabb::empty(),
         }
     }

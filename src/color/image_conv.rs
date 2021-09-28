@@ -64,9 +64,9 @@ conv!(
     no-scale
 
     Srgb => Rgb<f32>,
-    Srgb => Rgb<Float>,
+    Srgb => Rgb<f64>,
     Xyz => Rgb<f32>,
-    Xyz => Rgb<Float>,
+    Xyz => Rgb<f64>,
     Spectrum => Rgb<f32>,
-    Spectrum => Rgb<Float>
+    Spectrum => Rgb<f64>
 );
