@@ -1,3 +1,4 @@
+#![allow(clippy::excessive_precision)]
 //-------------------------------------------------------------
 // Data taken from https://en.wikipedia.org/wiki/CIE_1931_color_space#Analytical_approximation
 

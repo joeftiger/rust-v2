@@ -190,13 +190,13 @@ impl Node {
         let mut left_candidates = Candidates::with_capacity(candidates.len() / 2);
         let mut right_candidates = Candidates::with_capacity(candidates.len() / 2);
 
-        for e in candidates.drain(..) {
-            match sides[e.item.id as usize] {
-                Side::Left => left_candidates.push(e),
-                Side::Right => right_candidates.push(e),
+        for candidate in candidates.drain(..) {
+            match sides[candidate.item.id as usize] {
+                Side::Left => left_candidates.push(candidate),
+                Side::Right => right_candidates.push(candidate),
                 Side::Both => {
-                    right_candidates.push(e.clone());
-                    left_candidates.push(e);
+                    right_candidates.push(candidate);
+                    left_candidates.push(candidate);
                 }
             }
         }

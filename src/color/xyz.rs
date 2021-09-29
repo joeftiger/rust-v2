@@ -25,6 +25,7 @@ impl TryFrom<ColorSerde> for Xyz {
 
 impl From<Xyz> for Srgb {
     #[rustfmt::skip]
+    #[allow(clippy::excessive_precision)]
     fn from(xyz: Xyz) -> Self {
         let r =  3.2404542 * xyz[0] - 1.5371385 * xyz[1] - 0.4985314 * xyz[2];
         let g = -0.9692660 * xyz[0] + 1.8760108 * xyz[1] + 0.0415560 * xyz[2];
@@ -34,6 +35,7 @@ impl From<Xyz> for Srgb {
     }
 }
 
+#[allow(clippy::excessive_precision)]
 #[inline]
 fn compand(val: Float) -> Float {
     // https://entropymine.com/imageworsener/srgbformula/

@@ -25,6 +25,7 @@ impl TryFrom<ColorSerde> for Srgb {
 
 impl From<Srgb> for Xyz {
     #[allow(clippy::many_single_char_names)]
+    #[allow(clippy::excessive_precision)]
     fn from(srgb: Srgb) -> Self {
         let r = uncompand(srgb[0]);
         let g = uncompand(srgb[1]);
