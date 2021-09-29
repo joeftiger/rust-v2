@@ -8,12 +8,14 @@ pub mod receiver;
 pub mod sampleable;
 
 use crate::geometry::bvh::Tree;
+use core::convert::{Infallible, TryFrom};
 pub use emitter::*;
 pub use object::*;
 pub use receiver::*;
 pub use sampleable::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
+#[serde(try_from = "SceneData")]
 pub struct Scene {
     emitters: Vec<u32>,
     objects: Vec<SceneObject>,
@@ -22,7 +24,16 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn add(&mut self, obj: SceneObject) {
+    fn with_capacity(emitters: usize, objects: usize) -> Self {
+        assert!(emitters <= objects);
+        Self {
+            emitters: Vec::with_capacity(emitters),
+            objects: Vec::with_capacity(objects),
+            bvh: Default::default(),
+        }
+    }
+
+    fn add(&mut self, obj: SceneObject) {
         let index = self.objects.len();
         assert!(index <= u32::MAX as usize);
 
@@ -32,7 +43,7 @@ impl Scene {
         self.objects.push(obj);
     }
 
-    pub fn build_tree(&mut self) {
+    fn build_tree(&mut self) {
         let indices: Vec<u32> = (0..self.objects.len() as u32).collect();
         self.bvh = Tree::new(&indices, |i| self.objects[i as usize].bounds());
     }
@@ -69,4 +80,27 @@ impl Geometry for Scene {
             .iter()
             .any(|&i| self.objects[i as usize].intersects(ray))
     }
+}
+
+impl TryFrom<SceneData> for Scene {
+    type Error = Infallible;
+
+    #[cold]
+    #[inline(never)]
+    fn try_from(raw_scene: SceneData) -> Result<Self, Self::Error> {
+        let emitters = raw_scene.objects.iter().filter(|o| o.emitter()).count();
+
+        let mut scene = Scene::with_capacity(emitters, raw_scene.objects.len());
+        for obj in raw_scene.objects {
+            scene.add(obj);
+        }
+        scene.build_tree();
+
+        Ok(scene)
+    }
+}
+
+#[derive(Deserialize)]
+struct SceneData {
+    objects: Vec<SceneObject>,
 }
