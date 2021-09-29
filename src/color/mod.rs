@@ -199,8 +199,9 @@ macro_rules! color {
             }
 
             pub fn lerp(&mut self, other: &Self, t: $t) {
-                self.mul_assign(1.0 - t);
-                self.add_assign(other.mul(t));
+                for i in 0..$size {
+                    self[i] = t.lerp(self[i], other[i]);
+                }
             }
 
             pub fn lerped(&self, other: &Self, t: $t) -> Self {
@@ -234,7 +235,7 @@ macro_rules! color {
             #[inline]
             pub fn lambda(index: usize) -> $t {
                 let t = index as $t / ($size - 1) as $t;
-                LAMBDA_START.lerp(LAMBDA_END, t)
+                t.lerp(LAMBDA_START, LAMBDA_END)
             }
 
             #[inline]
