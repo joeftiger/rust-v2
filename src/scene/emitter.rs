@@ -1,5 +1,5 @@
-use crate::bxdf::bsdf::BSDF;
-use crate::geometry::{Geometry, Ray};
+use crate::bxdf::BSDF;
+use crate::geometry::{Aabb, Geometry, Intersection, Ray};
 use crate::scene::{Sampleable, Scene};
 use crate::util::floats;
 use crate::{Float, Spectrum, Vec2, Vec3, PACKET_SIZE};
@@ -159,6 +159,29 @@ impl Emitter {
         let radiance = self.radiance_lambda(-incident, surface_sample.normal, index);
 
         EmitterSample::new(radiance, incident, surface_sample.pdf, occlusion_tester)
+    }
+}
+
+#[typetag::serde]
+impl Geometry for Emitter {
+    #[inline]
+    fn contains(&self, point: Vec3) -> Option<bool> {
+        self.geometry.contains(point)
+    }
+
+    #[inline]
+    fn bounds(&self) -> Aabb {
+        self.geometry.bounds()
+    }
+
+    #[inline]
+    fn intersect(&self, ray: Ray) -> Option<Intersection> {
+        self.geometry.intersect(ray)
+    }
+
+    #[inline]
+    fn intersects(&self, ray: Ray) -> bool {
+        self.geometry.intersects(ray)
     }
 }
 
