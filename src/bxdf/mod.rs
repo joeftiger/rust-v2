@@ -1,4 +1,8 @@
 pub mod bsdf;
+pub mod lambertian;
+
+pub use bsdf::*;
+pub use lambertian::*;
 
 use crate::util::mc::sample_unit_hemisphere;
 use crate::{Float, Rot3, Spectrum, Vec2, Vec3, PACKET_SIZE};
@@ -278,6 +282,7 @@ impl<T> BxDFSample<T> {
     }
 }
 
+#[typetag::serde]
 pub trait BxDF {
     /// Returns the type of this bxdf.
     fn flag(&self) -> BxDFFlag;
