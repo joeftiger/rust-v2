@@ -28,3 +28,10 @@ pub fn approx_eq_epsilon(a: Float, b: Float, epsilon: Float) -> bool {
         diff / Float::MAX.min(a_abs + b_abs) < epsilon
     }
 }
+
+/// Returns the scaling parameter of `value` in-between `[start, end]`.
+/// If `value` is on the outside like `)start, end(`, the returned value will then be in `)0, 1(`.
+#[inline]
+pub fn lerp_inv(value: Float, start: Float, end: Float) -> Float {
+    (value - start) / (end - start)
+}
