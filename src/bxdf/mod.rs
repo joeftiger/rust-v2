@@ -1,8 +1,13 @@
 pub mod bsdf;
+pub mod fresnel;
 pub mod lambertian;
+pub mod oren_nayar;
+pub mod refraction;
 
 pub use bsdf::*;
+pub use fresnel::*;
 pub use lambertian::*;
+pub use oren_nayar::*;
 
 use crate::util::mc::sample_unit_hemisphere;
 use crate::{Float, Rot3, Spectrum, Vec2, Vec3, PACKET_SIZE};
@@ -320,17 +325,17 @@ pub trait BxDF {
     /// * `incident`: The incident direction onto the intersection we evaluate
     /// * `outgoing`: The outgoing light direction
     /// * `indices`: The indices of the spectrum to evaluate
+    // TODO: Use u16 or usize?
     fn evaluate_partial(
         &self,
         incident: Vec3,
         outgoing: Vec3,
-        indices: &[usize; PACKET_SIZE],
+        indices: &[u16; PACKET_SIZE],
     ) -> [Float; PACKET_SIZE] {
         let mut packet = [0.0; PACKET_SIZE];
         for i in 0..PACKET_SIZE {
-            packet[i] = self.evaluate_lambda(incident, outgoing, indices[i]);
+            packet[i] = self.evaluate_lambda(incident, outgoing, indices[i] as usize);
         }
-
         packet
     }
 
@@ -381,7 +386,7 @@ pub trait BxDF {
         &self,
         outgoing: Vec3,
         sample: Vec2,
-        indices: &[usize; PACKET_SIZE],
+        indices: &[u16; PACKET_SIZE],
     ) -> Option<BxDFSample<[Float; PACKET_SIZE]>> {
         let incident = flip_if_neg(sample_unit_hemisphere(sample));
         let spectrum = self.evaluate_partial(incident, outgoing, indices);
