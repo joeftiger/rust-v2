@@ -44,9 +44,12 @@ macro_rules! color {
     ($name:ident => $t:ident, $size:expr, $path:ident $(::$path2:ident)*) => {
         use core::ops::{Index, IndexMut, Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign};
         use core::slice::SliceIndex;
+        use core::iter::Sum;
+
+        use serde_big_array::reex::Error;
+
         use crate::color::*;
         use crate::util::floats;
-        use serde_big_array::reex::Error;
 
         #[derive(Clone, Copy, Debug, PartialEq)]
         pub struct $name {
@@ -518,6 +521,12 @@ macro_rules! color {
             fn eq(&self, c: &Color) -> bool {
                 let color = Self::from(c);
                 self == &color
+            }
+        }
+
+        impl Sum for $name {
+            fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+                iter.fold($name::default(), |a, b| a + b)
             }
         }
     };

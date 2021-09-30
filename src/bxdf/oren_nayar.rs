@@ -82,6 +82,7 @@ impl OrenNayar {
 
 #[typetag::serde]
 impl BxDF for OrenNayar {
+    #[inline(always)]
     fn flag(&self) -> BxDFFlag {
         BxDFFlag::DIFFUSE | BxDFFlag::REFLECTION
     }
@@ -92,17 +93,17 @@ impl BxDF for OrenNayar {
         self.r * oren_nayar
     }
 
-    fn evaluate_partial(
+    fn evaluate_packet(
         &self,
         incident: Vec3,
         outgoing: Vec3,
-        indices: &[u16; PACKET_SIZE],
+        indices: &[usize; PACKET_SIZE],
     ) -> [Float; PACKET_SIZE] {
         let oren_nayar = self.calc_param(incident, outgoing);
 
         let mut packet = [0.0; PACKET_SIZE];
         for i in 0..PACKET_SIZE {
-            packet[i] = self.r[indices[i] as usize] * oren_nayar;
+            packet[i] = self.r[indices[i]] * oren_nayar;
         }
         packet
     }

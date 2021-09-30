@@ -29,12 +29,12 @@ impl BxDF for LambertianReflection {
         BxDFFlag::REFLECTION | BxDFFlag::DIFFUSE
     }
 
-    fn evaluate(&self, _incident: Vec3, _outgoing: Vec3) -> Spectrum {
+    fn evaluate(&self, _: Vec3, _: Vec3) -> Spectrum {
         self.r * FRAC_1_PI
     }
 
     #[inline]
-    fn evaluate_lambda(&self, _incident: Vec3, _outgoing: Vec3, index: usize) -> Float {
+    fn evaluate_lambda(&self, _: Vec3, _: Vec3, index: usize) -> Float {
         self.r[index] * FRAC_1_PI
     }
 }

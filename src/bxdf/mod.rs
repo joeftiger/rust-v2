@@ -3,15 +3,17 @@ pub mod fresnel;
 pub mod lambertian;
 pub mod oren_nayar;
 pub mod refraction;
+pub mod specular;
 
 pub use bsdf::*;
 pub use fresnel::*;
 pub use lambertian::*;
 pub use oren_nayar::*;
+pub use specular::*;
 
 use crate::util::mc::sample_unit_hemisphere;
 use crate::{Float, Rot3, Spectrum, Vec2, Vec3, PACKET_SIZE};
-use cgmath::{Angle, InnerSpace, One, Rad, Rotation as cgRot, Rotation3};
+use cgmath::{InnerSpace, Rotation as cgRot};
 use core::ops::Mul;
 #[cfg(not(feature = "f64"))]
 use std::f32::consts::FRAC_1_PI;
@@ -29,13 +31,14 @@ pub enum Rotation {
     Some(Rot3),
 }
 
-impl Rotation {
-    /// Reversed the rotation (if any).
+impl core::ops::Neg for Rotation {
+    type Output = Self;
+
     #[inline]
-    pub fn reversed(&self) -> Self {
+    fn neg(self) -> Self::Output {
         match self {
             Rotation::Some(r) => Self::Some(r.invert()),
-            _ => *self,
+            _ => self,
         }
     }
 }
@@ -68,8 +71,12 @@ pub enum TransportMode {
 /// # Returns
 /// * The global BxDF normal
 #[inline]
-pub fn bxdf_normal() -> Vec3 {
-    Vec3::unit_y()
+pub const fn bxdf_normal() -> Vec3 {
+    Vec3 {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    }
 }
 
 #[inline]
@@ -102,7 +109,7 @@ pub fn bxdf_is_parallel(v: Vec3) -> bool {
 }
 
 #[inline]
-pub fn cos_theta(v: Vec3) -> Float {
+pub const fn cos_theta(v: Vec3) -> Float {
     v.y
 }
 
@@ -215,13 +222,7 @@ pub fn world_to_bxdf(v: Vec3) -> Rotation {
 
 #[inline]
 pub fn bxdf_to_world(v: Vec3) -> Rot3 {
-    if v == Vec3::unit_y() {
-        Rot3::one()
-    } else if v == -Vec3::unit_y() {
-        Rot3::from_angle_z(Rad::turn_div_2())
-    } else {
-        Rot3::between_vectors(bxdf_normal(), v)
-    }
+    Rot3::between_vectors(bxdf_normal(), v)
 }
 
 bitflags::bitflags! {
@@ -269,13 +270,19 @@ impl BxDFFlag {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum BxDFSamplePacket {
+    Bundle(Option<BxDFSample<[Float; PACKET_SIZE]>>),
+    Split([Option<BxDFSample<Float>>; PACKET_SIZE]),
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct BxDFSample<T> {
     pub spectrum: T,
     pub incident: Vec3,
     pub pdf: Float,
     pub flag: BxDFFlag,
 }
-
 impl<T> BxDFSample<T> {
     pub const fn new(spectrum: T, incident: Vec3, pdf: Float, flag: BxDFFlag) -> Self {
         Self {
@@ -294,7 +301,7 @@ pub trait BxDF {
 
     /// Matches the flag to be a subset of [Self::flag].
     #[inline]
-    fn is_flag(&self, f: BxDFFlag) -> bool {
+    fn match_flag(&self, f: BxDFFlag) -> bool {
         let sf = self.flag();
         sf.contains(f)
     }
@@ -326,11 +333,11 @@ pub trait BxDF {
     /// * `outgoing`: The outgoing light direction
     /// * `indices`: The indices of the spectrum to evaluate
     // TODO: Use u16 or usize?
-    fn evaluate_partial(
+    fn evaluate_packet(
         &self,
         incident: Vec3,
         outgoing: Vec3,
-        indices: &[u16; PACKET_SIZE],
+        indices: &[usize; PACKET_SIZE],
     ) -> [Float; PACKET_SIZE] {
         let mut packet = [0.0; PACKET_SIZE];
         for i in 0..PACKET_SIZE {
@@ -382,17 +389,19 @@ pub trait BxDF {
     /// # Arguments
     /// * `outgoing`: The outgoing light direction
     /// * `sample`: The sample space for randomization
-    fn sample_partial(
+    fn sample_packet(
         &self,
         outgoing: Vec3,
         sample: Vec2,
-        indices: &[u16; PACKET_SIZE],
-    ) -> Option<BxDFSample<[Float; PACKET_SIZE]>> {
+        indices: &[usize; PACKET_SIZE],
+    ) -> BxDFSamplePacket {
         let incident = flip_if_neg(sample_unit_hemisphere(sample));
-        let spectrum = self.evaluate_partial(incident, outgoing, indices);
+        let spectrum = self.evaluate_packet(incident, outgoing, indices);
         let pdf = self.pdf(incident, outgoing);
 
-        Some(BxDFSample::new(spectrum, incident, pdf, self.flag()))
+        let bundle = Some(BxDFSample::new(spectrum, incident, pdf, self.flag()));
+
+        BxDFSamplePacket::Bundle(bundle)
     }
 
     /// Samples the BxDF with possible spectral dependencies.

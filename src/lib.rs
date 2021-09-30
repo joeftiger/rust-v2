@@ -6,6 +6,7 @@ use cgmath::{Basis3, Vector2, Vector3};
 pub mod bxdf;
 pub mod color;
 pub mod geometry;
+pub mod sampler;
 pub mod scene;
 pub mod util;
 
