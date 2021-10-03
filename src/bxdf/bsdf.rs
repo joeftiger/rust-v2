@@ -1,6 +1,7 @@
 use crate::bxdf::{same_hemisphere, world_to_bxdf, BxDF, BxDFFlag, BxDFSample, BxDFSamplePacket};
 use crate::sampler::Sample;
 use crate::{Float, Spectrum, Vec3, PACKET_SIZE};
+use cgmath::Rotation;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize)]
@@ -67,8 +68,8 @@ impl BSDF {
     ) -> Spectrum {
         let rotation = world_to_bxdf(normal);
 
-        let incident = rotation * incident_world;
-        let outgoing = rotation * outgoing_world;
+        let incident = rotation.rotate_vector(incident_world);
+        let outgoing = rotation.rotate_vector(outgoing_world);
 
         // transmission or reflection
         if same_hemisphere(incident, outgoing) {
@@ -102,8 +103,8 @@ impl BSDF {
         indices: &[usize; PACKET_SIZE],
     ) -> [Float; PACKET_SIZE] {
         let rotation = world_to_bxdf(normal);
-        let incident = rotation * incident_world;
-        let outgoing = rotation * outgoing_world;
+        let incident = rotation.rotate_vector(incident_world);
+        let outgoing = rotation.rotate_vector(outgoing_world);
 
         // transmission or reflection
         if same_hemisphere(incident, outgoing) {
@@ -112,13 +113,11 @@ impl BSDF {
             flags.remove(BxDFFlag::REFLECTION);
         }
 
-        let mut packet = [0.0; PACKET_SIZE];
         if let Some(bxdf) = self.random_matching_bxdf(flags, sample) {
-            for i in 0..PACKET_SIZE {
-                packet[i] = bxdf.evaluate_lambda(incident, outgoing, indices[i])
-            }
+            bxdf.evaluate_packet(incident, outgoing, indices)
+        } else {
+            [0.0; PACKET_SIZE]
         }
-        packet
     }
 
     /// Evaluates a random BxDF.
@@ -140,8 +139,8 @@ impl BSDF {
         index: usize,
     ) -> Float {
         let rotation = world_to_bxdf(normal);
-        let incident = rotation * incident_world;
-        let outgoing = rotation * outgoing_world;
+        let incident = rotation.rotate_vector(incident_world);
+        let outgoing = rotation.rotate_vector(outgoing_world);
 
         // transmission or reflection
         if same_hemisphere(incident, outgoing) {
@@ -170,12 +169,12 @@ impl BSDF {
         flags: BxDFFlag,
     ) -> Option<BxDFSample<Spectrum>> {
         let rotation = world_to_bxdf(normal);
-        let outgoing = rotation * outgoing_world;
+        let outgoing = rotation.rotate_vector(outgoing_world);
 
         let bxdf = self.random_matching_bxdf(flags, sample.float)?;
 
         bxdf.sample(outgoing, sample.vec2).map(|mut s| {
-            s.incident = -rotation * s.incident;
+            s.incident = rotation.invert().rotate_vector(s.incident);
             s
         })
     }
@@ -197,7 +196,7 @@ impl BSDF {
         indices: &[usize; PACKET_SIZE],
     ) -> BxDFSamplePacket {
         let rotation = world_to_bxdf(normal);
-        let outgoing = rotation * outgoing_world;
+        let outgoing = rotation.rotate_vector(outgoing_world);
 
         let bxdf = if let Some(b) = self.random_matching_bxdf(flags, sample.float) {
             b
@@ -207,10 +206,12 @@ impl BSDF {
 
         let mut packet = bxdf.sample_packet(outgoing, sample.vec2, indices);
         match &mut packet {
-            BxDFSamplePacket::Bundle(Some(mut s)) => s.incident = -rotation * s.incident,
+            BxDFSamplePacket::Bundle(Some(mut s)) => {
+                s.incident = rotation.invert().rotate_vector(s.incident)
+            }
             BxDFSamplePacket::Split(mut samples) => {
                 for s in samples.iter_mut().flatten() {
-                    s.incident = -rotation * s.incident;
+                    s.incident = rotation.invert().rotate_vector(s.incident);
                 }
             }
             _ => {}
@@ -236,13 +237,13 @@ impl BSDF {
         index: usize,
     ) -> Option<BxDFSample<Float>> {
         let rotation = world_to_bxdf(normal);
-        let outgoing = rotation * outgoing_world;
+        let outgoing = rotation.rotate_vector(outgoing_world);
 
         let bxdf = self.random_matching_bxdf(flags, sample.float)?;
 
         bxdf.sample_lambda(outgoing, sample.vec2, index)
             .map(|mut s| {
-                s.incident = -rotation * s.incident;
+                s.incident = rotation.invert().rotate_vector(s.incident);
                 s
             })
     }

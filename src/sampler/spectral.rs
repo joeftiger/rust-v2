@@ -1,3 +1,4 @@
+use crate::util::Index;
 use crate::{Spectrum, PACKET_SIZE};
 use fastrand::usize as rand;
 use serde::{Deserialize, Serialize};
@@ -11,6 +12,23 @@ pub enum SpectralSampler {
 }
 
 impl SpectralSampler {
+    pub fn create(self) -> [usize; PACKET_SIZE] {
+        if PACKET_SIZE == Spectrum::size() {
+            let mut i = Index::new();
+            return [0; PACKET_SIZE].map(|_| i.get_and_inc());
+        }
+
+        match self {
+            SpectralSampler::Random => [0; PACKET_SIZE].map(|_| rand(0..Spectrum::size())),
+            SpectralSampler::Hero => {
+                let hero = rand(0..Spectrum::size());
+
+                let mut i = Index::new();
+                [0; PACKET_SIZE].map(|_| Self::hero(i.get_and_inc(), hero))
+            }
+        }
+    }
+
     pub fn fill(self, indices: &mut [usize; PACKET_SIZE]) {
         match self {
             SpectralSampler::Random => indices

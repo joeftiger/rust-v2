@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Receiver {
     geometry: Box<dyn Geometry>,
+    #[serde(default)]
     pub bsdf: BSDF,
 }
 

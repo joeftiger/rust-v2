@@ -137,6 +137,7 @@ macro_rules! color {
             /// let red = Srgb::new([1.0, 0.0, 0.0]);
             /// assert!(!red.is_black());
             /// ```
+            #[inline]
             pub fn is_black(&self) -> bool {
                 self.data.iter().all(|value| *value == 0.0)
             }

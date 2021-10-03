@@ -61,7 +61,7 @@ impl Geometry for Sphere {
         let point = ray.at(t);
         let normal = (point - self.center).normalize();
 
-        Some(Intersection::new(point, normal, t))
+        Some(Intersection::new(point, normal, ray.direction, t))
     }
 
     fn intersects(&self, ray: Ray) -> bool {

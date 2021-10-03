@@ -157,7 +157,7 @@ impl Geometry for Aabb {
             .map(|f| f as i64 as Float)
             .normalize();
 
-        Some(Intersection::new(point, normal, t))
+        Some(Intersection::new(point, normal, ray.direction, t))
     }
 
     fn intersects(&self, ray: Ray) -> bool {

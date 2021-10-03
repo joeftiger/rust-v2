@@ -12,6 +12,7 @@ pub use oren_nayar::*;
 pub use specular::*;
 
 use crate::util::mc::sample_unit_hemisphere;
+use crate::util::Index;
 use crate::{Float, Rot3, Spectrum, Vec2, Vec3, PACKET_SIZE};
 use cgmath::{InnerSpace, Rotation as cgRot};
 use core::ops::Mul;
@@ -210,14 +211,8 @@ pub fn same_hemisphere(a: Vec3, b: Vec3) -> bool {
 }
 
 #[inline]
-pub fn world_to_bxdf(v: Vec3) -> Rotation {
-    if v == Vec3::unit_y() {
-        Rotation::None
-    } else if v == -Vec3::unit_y() {
-        Rotation::Flip
-    } else {
-        Rotation::Some(Rot3::between_vectors(v, bxdf_normal()))
-    }
+pub fn world_to_bxdf(v: Vec3) -> Rot3 {
+    Rot3::between_vectors(v, bxdf_normal())
 }
 
 #[inline]
@@ -295,15 +290,14 @@ impl<T> BxDFSample<T> {
 }
 
 #[typetag::serde]
-pub trait BxDF {
+pub trait BxDF: Send + Sync {
     /// Returns the type of this bxdf.
     fn flag(&self) -> BxDFFlag;
 
     /// Matches the flag to be a subset of [Self::flag].
     #[inline]
     fn match_flag(&self, f: BxDFFlag) -> bool {
-        let sf = self.flag();
-        sf.contains(f)
+        self.flag().contains(f)
     }
 
     /// Evaluates the BxDF.
@@ -339,11 +333,9 @@ pub trait BxDF {
         outgoing: Vec3,
         indices: &[usize; PACKET_SIZE],
     ) -> [Float; PACKET_SIZE] {
-        let mut packet = [0.0; PACKET_SIZE];
-        for i in 0..PACKET_SIZE {
-            packet[i] = self.evaluate_lambda(incident, outgoing, indices[i] as usize);
-        }
-        packet
+        let mut i = Index::new();
+        [0.0; PACKET_SIZE]
+            .map(|_| self.evaluate_lambda(incident, outgoing, indices[i.get_and_inc()]))
     }
 
     /// Evaluates the BxDF with possible spectral dependencies.

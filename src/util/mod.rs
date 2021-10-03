@@ -1,7 +1,10 @@
 pub mod floats;
 pub mod math;
 pub mod mc;
+mod packet_impl;
 pub mod threadpool;
+
+pub use packet_impl::PacketOps;
 
 pub struct Index(usize);
 

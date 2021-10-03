@@ -382,9 +382,11 @@ impl CoordinateSystem {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Intersection {
     pub point: Vec3,
     pub normal: Vec3,
+    pub incoming: Vec3,
     pub t: Float,
 }
 
@@ -393,13 +395,18 @@ impl Intersection {
         self.normal
     }
 
-    pub const fn new(point: Vec3, normal: Vec3, t: Float) -> Self {
-        Self { point, normal, t }
+    pub const fn new(point: Vec3, normal: Vec3, incoming: Vec3, t: Float) -> Self {
+        Self {
+            point,
+            normal,
+            incoming,
+            t,
+        }
     }
 }
 
 #[typetag::serde]
-pub trait Geometry {
+pub trait Geometry: Send + Sync {
     /// Returns whether this geometry contains the given point.
     ///
     /// # Arguments

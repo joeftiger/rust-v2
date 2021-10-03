@@ -1,6 +1,6 @@
 use crate::geometry::{Aabb, Geometry, Intersection, Ray};
 use crate::Vec3;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 pub mod emitter;
 pub mod object;
@@ -8,14 +8,27 @@ pub mod receiver;
 pub mod sampleable;
 
 use crate::geometry::bvh::Tree;
-use core::convert::{Infallible, TryFrom};
 pub use emitter::*;
 pub use object::*;
 pub use receiver::*;
 pub use sampleable::*;
 
-#[derive(Serialize, Deserialize, Default)]
-#[serde(try_from = "SceneData")]
+/// A scene intersection is a more detailed `Intersection`, also containing a reference to the
+/// intersected object.
+#[derive(Clone)]
+pub struct SceneIntersection<'a> {
+    pub i: Intersection,
+    pub object: &'a SceneObject,
+}
+
+impl<'a> SceneIntersection<'a> {
+    pub const fn new(i: Intersection, object: &'a SceneObject) -> Self {
+        Self { i, object }
+    }
+}
+
+#[derive(Deserialize, Default)]
+#[serde(from = "SceneData")]
 pub struct Scene {
     emitters: Vec<u32>,
     objects: Vec<SceneObject>,
@@ -24,28 +37,48 @@ pub struct Scene {
 }
 
 impl Scene {
-    fn with_capacity(emitters: usize, objects: usize) -> Self {
-        assert!(emitters <= objects);
-        Self {
-            emitters: Vec::with_capacity(emitters),
-            objects: Vec::with_capacity(objects),
-            bvh: Default::default(),
+    pub fn num_emitters(&self) -> usize {
+        self.emitters.len()
+    }
+
+    pub fn num_objects(&self) -> usize {
+        self.objects.len()
+    }
+
+    /// Returns all emitter indices in the scene
+    pub fn emitters(&self) -> &[u32] {
+        &self.emitters
+    }
+
+    pub fn get_emitter(&self, index: usize) -> Option<&Emitter> {
+        match self.get_object(index) {
+            SceneObject::Emitter(e) => Some(e),
+            _ => None,
         }
     }
 
-    fn add(&mut self, obj: SceneObject) {
-        let index = self.objects.len();
-        assert!(index <= u32::MAX as usize);
-
-        if obj.receiver() {
-            self.emitters.push(index as u32);
-        }
-        self.objects.push(obj);
+    pub fn get_object(&self, index: usize) -> &SceneObject {
+        &self.objects[index]
     }
 
     fn build_tree(&mut self) {
         let indices: Vec<u32> = (0..self.objects.len() as u32).collect();
         self.bvh = Tree::new(&indices, |i| self.objects[i as usize].bounds());
+    }
+
+    pub fn intersect(&self, mut ray: Ray) -> Option<SceneIntersection> {
+        let mut intersection = None;
+
+        for hit_index in self.bvh.intersect(ray) {
+            let object = self.get_object(hit_index as usize);
+
+            if let Some(i) = object.intersect(ray) {
+                ray.t_end = i.t;
+                intersection = Some(SceneIntersection::new(i, object));
+            }
+        }
+
+        intersection
     }
 }
 
@@ -82,25 +115,49 @@ impl Geometry for Scene {
     }
 }
 
-impl TryFrom<SceneData> for Scene {
-    type Error = Infallible;
-
-    #[cold]
-    #[inline(never)]
-    fn try_from(raw_scene: SceneData) -> Result<Self, Self::Error> {
-        let emitters = raw_scene.objects.iter().filter(|o| o.emitter()).count();
-
-        let mut scene = Scene::with_capacity(emitters, raw_scene.objects.len());
-        for obj in raw_scene.objects {
-            scene.add(obj);
+impl Serialize for Scene {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        SceneDataRef {
+            objects: &self.objects,
         }
-        scene.build_tree();
-
-        Ok(scene)
+        .serialize(serializer)
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize)]
+struct SceneDataRef<'a> {
+    objects: &'a [SceneObject],
+}
+
+#[derive(Serialize, Deserialize)]
 struct SceneData {
     objects: Vec<SceneObject>,
+}
+impl From<SceneData> for Scene {
+    fn from(data: SceneData) -> Self {
+        let emitters = data
+            .objects
+            .iter()
+            .enumerate()
+            .filter_map(|(i, o)| if o.emitter() { Some(i as u32) } else { None })
+            .collect();
+
+        let mut scene = Scene {
+            emitters,
+            objects: data.objects,
+            bvh: Default::default(),
+        };
+        scene.build_tree();
+        scene
+    }
+}
+impl From<Scene> for SceneData {
+    fn from(scene: Scene) -> Self {
+        Self {
+            objects: scene.objects,
+        }
+    }
 }

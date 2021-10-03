@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 ///! coefficient**. The extinction coefficient describes how strongly a material absorbs light at given
 ///! wavelength.
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum RefractiveType {
     Air,
     Vacuum,

@@ -12,7 +12,7 @@ macro_rules! conv {
             impl From<$origin> for $target<$t> {
                 fn from(o: $origin) -> Self {
                     let mut srgb = Srgb::from(o);
-                    srgb *= bit_size_of::<$t>() as Float;
+                    srgb *= 2u32.pow(bit_size_of::<$t>() as u32) as Float;
 
                     Self::from([
                         srgb.data[0] as $t,

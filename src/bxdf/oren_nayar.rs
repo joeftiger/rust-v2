@@ -1,5 +1,6 @@
 use crate::bxdf::{cos_phi, cos_theta, sin_phi, sin_theta, BxDF, BxDFFlag};
 use crate::util::floats::EPSILON;
+use crate::util::Index;
 use crate::*;
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "f64"))]
@@ -8,7 +9,7 @@ use std::f32::consts::FRAC_1_PI;
 use std::f64::consts::FRAC_1_PI;
 
 /// The Oren-Nayar reflectance model describes rough opaque diffuse surfaces where each facet is lambertian (diffuse).
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OrenNayar {
     r: Spectrum,
     a: Float,
@@ -101,11 +102,8 @@ impl BxDF for OrenNayar {
     ) -> [Float; PACKET_SIZE] {
         let oren_nayar = self.calc_param(incident, outgoing);
 
-        let mut packet = [0.0; PACKET_SIZE];
-        for i in 0..PACKET_SIZE {
-            packet[i] = self.r[indices[i]] * oren_nayar;
-        }
-        packet
+        let mut i = Index::new();
+        [0.0; PACKET_SIZE].map(|_| self.r[indices[i.get_and_inc()]] * oren_nayar)
     }
 
     fn evaluate_lambda(&self, incident: Vec3, outgoing: Vec3, index: usize) -> Float {

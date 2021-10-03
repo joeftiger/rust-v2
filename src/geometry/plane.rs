@@ -44,7 +44,7 @@ impl Geometry for Plane {
 
         let point = ray.at(t);
 
-        Some(Intersection::new(point, self.normal, t))
+        Some(Intersection::new(point, self.normal, ray.direction, t))
     }
 
     #[inline]

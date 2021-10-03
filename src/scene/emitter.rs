@@ -9,19 +9,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Emitter {
     geometry: Box<dyn Sampleable>,
+    #[serde(default)]
     pub bsdf: BSDF,
     pub emission: Spectrum,
 }
 
 impl Emitter {
-    pub fn new(geometry: Box<dyn Sampleable>, bsdf: BSDF, emission: Spectrum) -> Self {
-        Self {
-            geometry,
-            bsdf,
-            emission,
-        }
-    }
-
     /// Computes the radiance of this emitter.
     ///
     /// # Constraints
@@ -57,7 +50,7 @@ impl Emitter {
     /// * `incident`: The incident on the surface of an object
     /// * `normal`: The normal on the surface of an object
     /// * `indices`: The spectral indices
-    pub fn radiance_partial(
+    pub fn radiance_packet(
         &self,
         incident: Vec3,
         normal: Vec3,
@@ -127,18 +120,18 @@ impl Emitter {
     /// * `point` - The point from which we sample the emitter
     /// * `sample` - A random sample
     /// * `indices`: The spectral indices
-    pub fn sample_partial(
+    pub fn sample_packet(
         &self,
         point: Vec3,
         sample: Vec2,
         indices: &[usize; PACKET_SIZE],
     ) -> EmitterSample<[Float; PACKET_SIZE]> {
         let surface_sample = self.geometry.sample_surface(point, sample);
-        let occlusion_tester = OcclusionTester::between(point, surface_sample.point);
-        let incident = occlusion_tester.ray.direction;
-        let radiances = self.radiance_partial(-incident, surface_sample.normal, indices);
+        let occlusion = OcclusionTester::between(point, surface_sample.point);
+        let incident = occlusion.ray.direction;
+        let radiances = self.radiance_packet(-incident, surface_sample.normal, indices);
 
-        EmitterSample::new(radiances, incident, surface_sample.pdf, occlusion_tester)
+        EmitterSample::new(radiances, incident, surface_sample.pdf, occlusion)
     }
 
     /// Samples the emitter.

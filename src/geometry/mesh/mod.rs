@@ -7,8 +7,7 @@ use cgmath::{Bounded, ElementWise, InnerSpace, Rotation};
 use core::convert::TryFrom;
 use core::mem;
 use obj::ObjFile;
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// A triangle consists of vertex indices `(v0, v1, v2)`.
 ///
@@ -135,7 +134,7 @@ impl Face {
         }
         .normalize();
 
-        Some(Intersection::new(point, normal, t))
+        Some(Intersection::new(point, normal, ray.direction, t))
     }
 
     #[allow(clippy::many_single_char_names)]
@@ -208,36 +207,15 @@ impl Face {
 
 /// The shading mode defines the shading of normals. In `Flat` mode, the surface of triangles will
 /// appear flat. In `Phong` however, they will be interpolated to create a smooth looking surface.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum ShadingMode {
     Flat,
     Phong,
 }
 
-#[derive(Serialize, Deserialize)]
-enum MeshSerde {
-    Obj(MeshObj),
-    Mesh(Mesh),
-}
-
-#[derive(Serialize, Deserialize)]
-struct MeshObj {
-    /// The path of the mesh file
-    path: String,
-    /// Optional scaling (1st application)
-    #[serde(default)]
-    scale: Option<Vec3>,
-    #[serde(default)]
-    /// Optional rotation (2nd application)
-    /// - params: (axis, angle)
-    rotation: Option<Rot3>,
-    #[serde(default)]
-    /// Optional translation (3rd application)
-    translation: Option<Vec3>,
-    shading_mode: ShadingMode,
-}
-
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
+#[serde(try_from = "MeshSerde")]
+#[serde(into = "MeshSerde")]
 pub struct Mesh {
     vertices: Vec<Vec3>,
     normals: Vec<Vec3>,
@@ -247,6 +225,19 @@ pub struct Mesh {
     bounds: Aabb,
     #[serde(skip_serializing)]
     bvh: Tree,
+}
+
+impl Clone for Mesh {
+    fn clone(&self) -> Self {
+        Self {
+            vertices: self.vertices.clone(),
+            normals: self.normals.clone(),
+            faces: self.faces.clone(),
+            shading_mode: self.shading_mode,
+            bounds: self.bounds,
+            bvh: Default::default(),
+        }
+    }
 }
 
 impl Mesh {
@@ -319,43 +310,6 @@ impl Mesh {
     }
 }
 
-impl TryFrom<MeshObj> for Mesh {
-    type Error = String;
-
-    fn try_from(mesh_obj: MeshObj) -> Result<Self, Self::Error> {
-        let obj = ObjFile::load(&mesh_obj.path)?;
-        let mut mesh = Mesh::new(obj.vertices, obj.normals, obj.faces, mesh_obj.shading_mode);
-
-        if let Some(s) = mesh_obj.scale {
-            mesh.scale(s);
-        }
-        if let Some(r) = mesh_obj.rotation {
-            mesh.rotate(r);
-        }
-        if let Some(t) = mesh_obj.translation {
-            mesh.translate(t);
-        }
-
-        Ok(mesh)
-    }
-}
-
-impl<'de> Deserialize<'de> for Mesh {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut mesh = match MeshSerde::deserialize(deserializer)? {
-            MeshSerde::Obj(obj) => Mesh::try_from(obj).map_err(D::Error::custom)?,
-            MeshSerde::Mesh(m) => m,
-        };
-
-        mesh.build_tree();
-
-        Ok(mesh)
-    }
-}
-
 #[typetag::serde]
 impl Geometry for Mesh {
     #[inline(always)]
@@ -386,5 +340,61 @@ impl Geometry for Mesh {
             .intersect(ray)
             .iter()
             .any(|&i| self.faces[i as usize].intersects(self, ray))
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum MeshSerde {
+    Config(MeshConfig),
+    Mesh(Mesh),
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+struct MeshConfig {
+    /// The path of the mesh file
+    path: String,
+    /// Optional scaling (1st application)
+    #[serde(default)]
+    scale: Option<Vec3>,
+    #[serde(default)]
+    /// Optional rotation (2nd application)
+    /// - params: (axis, angle)
+    rotation: Option<Rot3>,
+    #[serde(default)]
+    /// Optional translation (3rd application)
+    translation: Option<Vec3>,
+    shading_mode: ShadingMode,
+}
+impl TryFrom<MeshSerde> for Mesh {
+    type Error = String;
+
+    fn try_from(serde: MeshSerde) -> Result<Self, Self::Error> {
+        match serde {
+            MeshSerde::Config(conf) => {
+                let obj = ObjFile::load(&conf.path)?;
+                let mut mesh = Mesh::new(obj.vertices, obj.normals, obj.faces, conf.shading_mode);
+
+                if let Some(s) = conf.scale {
+                    mesh.scale(s);
+                }
+                if let Some(r) = conf.rotation {
+                    mesh.rotate(r);
+                }
+                if let Some(t) = conf.translation {
+                    mesh.translate(t);
+                }
+
+                Ok(mesh)
+            }
+            MeshSerde::Mesh(mut mesh) => {
+                mesh.build_tree();
+                Ok(mesh)
+            }
+        }
+    }
+}
+impl From<Mesh> for MeshSerde {
+    fn from(mesh: Mesh) -> Self {
+        Self::Mesh(mesh)
     }
 }

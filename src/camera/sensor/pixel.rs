@@ -32,6 +32,14 @@ impl Pixel {
         self.average = avg / self.samples;
     }
 
+    pub fn add_none_packet(&mut self, indices: &[usize; PACKET_SIZE]) {
+        for &index in indices {
+            let avg = self.average[index] * self.samples[index] as Float;
+            self.samples.inc(index);
+            self.average[index] = avg / self.samples[index] as Float;
+        }
+    }
+
     pub fn add(&mut self, spectrum: Spectrum) {
         let mut avg = self.average * self.samples;
         avg += spectrum;
@@ -40,13 +48,11 @@ impl Pixel {
         self.average = avg / self.samples;
     }
 
-    pub fn add_packet(&mut self, spectrum: [Float; PACKET_SIZE], indices: &[usize; PACKET_SIZE]) {
-        #[allow(clippy::needless_range_loop)]
+    pub fn add_packet(&mut self, spectrum: &[Float; PACKET_SIZE], indices: &[usize; PACKET_SIZE]) {
         for i in 0..PACKET_SIZE {
             let index = indices[i];
-
             let mut avg = self.average[index] * self.samples[index] as Float;
-            avg += spectrum[index];
+            avg += spectrum[i];
             self.samples.inc(index);
 
             self.average[index] = avg / self.samples[index] as Float;

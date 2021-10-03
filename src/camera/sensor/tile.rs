@@ -1,24 +1,28 @@
-use crate::sensor::Pixel;
+use crate::camera::sensor::Pixel;
 use crate::{UVec2, SENSOR_TILE_WIDTH};
 
 use serde::{Deserialize, Serialize};
 
-const SIZE: usize = SENSOR_TILE_WIDTH * SENSOR_TILE_WIDTH;
+pub const SENSOR_PIXEL_LEN: usize = (SENSOR_TILE_WIDTH * SENSOR_TILE_WIDTH) as usize;
 
 serde_big_array::big_array! {
     SensorSerde;
-    SIZE
+    SENSOR_PIXEL_LEN
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SensorTile {
     #[serde(with = "SensorSerde")]
-    pub pixels: [Pixel; SIZE],
+    pub pixels: [Pixel; SENSOR_PIXEL_LEN],
 }
 
 impl SensorTile {
+    /// Creates a new sensor tile with a square size of [SENSOR_TILE_WIDTH].
+    ///
+    /// # Arguments
+    /// * `start`: The start position of the top left pixel
     pub fn new(start: UVec2) -> Self {
-        let mut pixels = [Pixel::default(); SIZE];
+        let mut pixels = [Pixel::default(); SENSOR_PIXEL_LEN];
 
         let mut i = 0;
         for x in 0..SENSOR_TILE_WIDTH {
