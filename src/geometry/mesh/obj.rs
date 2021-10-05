@@ -115,10 +115,10 @@ impl ObjFile {
                 .ok_or_else(|| "missing face component".to_string())?,
         )?;
 
-        let v = (v0, v1, v2);
+        let v = (v0 - 1, v1 - 1, v2 - 1);
         let vn = match (n0, n1, n2) {
             (None, None, None) => None,
-            (Some(a), Some(b), Some(c)) => Some((a, b, c)),
+            (Some(a), Some(b), Some(c)) => Some((a - 1, b - 1, c - 1)),
             _ => return Err("invalid vertex normal mixup".into()),
         };
 

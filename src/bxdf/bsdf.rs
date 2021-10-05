@@ -1,7 +1,6 @@
 use crate::bxdf::{same_hemisphere, world_to_bxdf, BxDF, BxDFFlag, BxDFSample, BxDFSamplePacket};
 use crate::sampler::Sample;
 use crate::{Float, Spectrum, Vec3, PACKET_SIZE};
-use cgmath::Rotation;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize)]
@@ -113,11 +112,10 @@ impl BSDF {
             flags.remove(BxDFFlag::REFLECTION);
         }
 
-        if let Some(bxdf) = self.random_matching_bxdf(flags, sample) {
-            bxdf.evaluate_packet(incident, outgoing, indices)
-        } else {
-            [0.0; PACKET_SIZE]
-        }
+        self.random_matching_bxdf(flags, sample)
+            .map_or([0.0; PACKET_SIZE], |bxdf| {
+                bxdf.evaluate_packet(incident, outgoing, indices)
+            })
     }
 
     /// Evaluates a random BxDF.
@@ -205,13 +203,15 @@ impl BSDF {
         };
 
         let mut packet = bxdf.sample_packet(outgoing, sample.vec2, indices);
+        let inv_rotation = rotation.invert();
+
         match &mut packet {
-            BxDFSamplePacket::Bundle(Some(mut s)) => {
-                s.incident = rotation.invert().rotate_vector(s.incident)
+            BxDFSamplePacket::Bundle(Some(ref mut s)) => {
+                s.incident = inv_rotation.rotate_vector(s.incident)
             }
-            BxDFSamplePacket::Split(mut samples) => {
+            BxDFSamplePacket::Split(ref mut samples) => {
                 for s in samples.iter_mut().flatten() {
-                    s.incident = rotation.invert().rotate_vector(s.incident);
+                    s.incident = inv_rotation.rotate_vector(s.incident);
                 }
             }
             _ => {}

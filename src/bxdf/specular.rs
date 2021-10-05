@@ -5,6 +5,7 @@ use crate::bxdf::{
     bxdf_incident_to, bxdf_normal, cos_theta, fresnel_dielectric, refract, BxDF, BxDFFlag,
     BxDFSample, BxDFSamplePacket, Fresnel, FresnelDielectric, FresnelType,
 };
+use crate::util::PacketOps;
 use crate::{Float, Spectrum, Vec2, Vec3, PACKET_SIZE};
 use serde::{Deserialize, Serialize};
 
@@ -81,11 +82,9 @@ impl BxDF for SpecularReflection {
 
         let cos_i = cos_theta(incident);
 
-        let mut packet = [0.0; PACKET_SIZE];
-        for i in 0..PACKET_SIZE {
-            let lambda = Spectrum::lambda(indices[i]);
-            packet[i] = self.r[i] * self.fresnel.evaluate_lambda(cos_i, lambda)
-        }
+        let lambdas = indices.map(Spectrum::lambda);
+        let fresnel = self.fresnel.evaluate_packet(cos_i, &lambdas);
+        let packet = indices.map(|i| self.r[i]).mul(fresnel);
 
         let bundle = Some(BxDFSample::new(packet, incident, 1.0, self.flag()));
 

@@ -5,7 +5,7 @@
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "PerspectiveCamera": Config ((
             sampler: Random,
             eye: (
                 x: 0,
@@ -29,14 +29,11 @@
             ),
         )),
     },
-    sensor: Config((
-        x: 512,
-        y: 512,
-    )),
     integrator: {
-        "Path": (
+        "SpectralPath": (
             max_depth: 8,
             sampler: Random,
+            spectral_sampler: Hero,
             direct_illum: All,
         ),
     },
@@ -68,6 +65,7 @@
                         },
                     ],
                 ),
+                tag: "debug",
             )),
             Receiver((
                 geometry: {
@@ -177,13 +175,39 @@
                     ],
                 ),
             )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.5,
+                            y: -0.5,
+                            z: 0.5,
+                        ),
+                        radius: 0.5,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "FresnelSpecular": (
+                                r: Constant(1),
+                                t: Constant(1),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Sapphire,
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+            )),
             Emitter((
                 geometry: {
                     "Sphere": (
                         center: (
-                            x: -1,
-                            y: 1,
-                            z: -1,
+                            x: -0.5,
+                            y: 0.5,
+                            z: -0.5,
                         ),
                         radius: 0.5,
                     ),

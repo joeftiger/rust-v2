@@ -12,6 +12,8 @@ pub struct Emitter {
     #[serde(default)]
     pub bsdf: BSDF,
     pub emission: Spectrum,
+    #[serde(default)]
+    pub tag: String,
 }
 
 impl Emitter {
@@ -56,16 +58,12 @@ impl Emitter {
         normal: Vec3,
         indices: &[usize; PACKET_SIZE],
     ) -> [Float; PACKET_SIZE] {
-        let mut radiance = [0.0; PACKET_SIZE];
-
         let cos_theta = incident.dot(normal);
         if cos_theta > 0.0 {
-            for i in 0..PACKET_SIZE {
-                radiance[i] = self.emission[indices[i]];
-            }
+            indices.map(|i| self.emission[i])
+        } else {
+            [0.0; PACKET_SIZE]
         }
-
-        radiance
     }
 
     /// Computes the radiance of this emitter.

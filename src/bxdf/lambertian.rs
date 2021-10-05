@@ -1,5 +1,5 @@
 use crate::bxdf::{BxDF, BxDFFlag};
-use crate::{Float, Spectrum, Vec3};
+use crate::{Float, Spectrum, Vec3, PACKET_SIZE};
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "f64"))]
 use std::f32::consts::FRAC_1_PI;
@@ -33,6 +33,15 @@ impl BxDF for LambertianReflection {
         self.r * FRAC_1_PI
     }
 
+    fn evaluate_packet(
+        &self,
+        _: Vec3,
+        _: Vec3,
+        indices: &[usize; PACKET_SIZE],
+    ) -> [Float; PACKET_SIZE] {
+        indices.map(|i| self.r[i] * FRAC_1_PI)
+    }
+
     #[inline]
     fn evaluate_lambda(&self, _: Vec3, _: Vec3, index: usize) -> Float {
         self.r[index] * FRAC_1_PI
@@ -64,6 +73,15 @@ impl BxDF for LambertianTransmission {
 
     fn evaluate(&self, _: Vec3, _: Vec3) -> Spectrum {
         self.t * FRAC_1_PI
+    }
+
+    fn evaluate_packet(
+        &self,
+        _: Vec3,
+        _: Vec3,
+        indices: &[usize; PACKET_SIZE],
+    ) -> [Float; PACKET_SIZE] {
+        indices.map(|i| self.t[i] * FRAC_1_PI)
     }
 
     #[inline]

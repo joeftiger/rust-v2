@@ -211,7 +211,7 @@ impl Threadpool {
 
     /// Waits for all tasks and workers to finish and exit.
     pub fn join(&self) {
-        let num_workers = self.num_active_workers.fetch_and(0, Ordering::SeqCst);
+        let num_workers = self.num_active_workers.swap(0, Ordering::SeqCst);
         for _ in 0..num_workers {
             self.queue.insert(Message::Exit);
         }

@@ -1,14 +1,15 @@
 pub mod pixel;
 pub mod tile;
 
+use parking_lot::Mutex;
 pub use pixel::*;
-use std::sync::Mutex;
 pub use tile::*;
 
 use crate::{UVec2, SENSOR_TILE_WIDTH};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(from = "SensorDe")]
 pub struct Sensor {
     pub resolution: UVec2,
     pub tiles: Vec<Mutex<SensorTile>>,
@@ -54,12 +55,25 @@ impl Sensor {
         Self { resolution, tiles }
     }
 
+    pub const fn new2(resolution: UVec2, tiles: Vec<Mutex<SensorTile>>) -> Self {
+        Self { resolution, tiles }
+    }
+
     pub fn num_tiles(&self) -> usize {
         self.tiles.len()
     }
 
     pub fn tile(&self, index: usize) -> &Mutex<SensorTile> {
         &self.tiles[index]
+    }
+}
+
+impl From<SensorDe> for Sensor {
+    fn from(de: SensorDe) -> Self {
+        match de {
+            SensorDe::Config(resolution) => Self::new(resolution),
+            SensorDe::Checkpoint(resolution, tiles) => Self::new2(resolution, tiles),
+        }
     }
 }
 
@@ -72,25 +86,15 @@ impl Serialize for Sensor {
     }
 }
 
-impl<'de> Deserialize<'de> for Sensor {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        match SensorDe::deserialize(deserializer)? {
-            SensorDe::Checkpoint(resolution, tiles) => Ok(Sensor { resolution, tiles }),
-            SensorDe::Config(res) => Ok(Self::new(res)),
-        }
-    }
-}
-
 #[derive(Serialize)]
+#[serde(untagged)]
 enum SensorSer<'a> {
     Checkpoint(UVec2, &'a [Mutex<SensorTile>]),
 }
 
 #[derive(Deserialize)]
+#[serde(untagged)]
 enum SensorDe {
-    Config(UVec2),
     Checkpoint(UVec2, Vec<Mutex<SensorTile>>),
+    Config(UVec2),
 }

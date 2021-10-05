@@ -12,10 +12,8 @@ pub use oren_nayar::*;
 pub use specular::*;
 
 use crate::util::mc::sample_unit_hemisphere;
-use crate::util::Index;
 use crate::{Float, Rot3, Spectrum, Vec2, Vec3, PACKET_SIZE};
 use cgmath::{InnerSpace, Rotation as cgRot};
-use core::ops::Mul;
 #[cfg(not(feature = "f64"))]
 use std::f32::consts::FRAC_1_PI;
 #[cfg(feature = "f64")]
@@ -32,27 +30,21 @@ pub enum Rotation {
     Some(Rot3),
 }
 
-impl core::ops::Neg for Rotation {
-    type Output = Self;
-
+impl Rotation {
     #[inline]
-    fn neg(self) -> Self::Output {
+    pub fn invert(self) -> Self {
         match self {
-            Rotation::Some(r) => Self::Some(r.invert()),
+            Self::Some(r) => Self::Some(r.invert()),
             _ => self,
         }
     }
-}
-
-impl Mul<Vec3> for Rotation {
-    type Output = Vec3;
 
     #[inline]
-    fn mul(self, rhs: Vec3) -> Self::Output {
+    pub fn rotate_vector(self, v: Vec3) -> Vec3 {
         match self {
-            Rotation::None => rhs,
-            Rotation::Flip => flip(rhs),
-            Rotation::Some(r) => r.rotate_vector(rhs),
+            Rotation::None => v,
+            Rotation::Flip => flip(v),
+            Rotation::Some(r) => r.rotate_vector(v),
         }
     }
 }
@@ -73,11 +65,7 @@ pub enum TransportMode {
 /// * The global BxDF normal
 #[inline]
 pub const fn bxdf_normal() -> Vec3 {
-    Vec3 {
-        x: 0.0,
-        y: 1.0,
-        z: 0.0,
-    }
+    Vec3::new(0.0, 1.0, 0.0)
 }
 
 #[inline]
@@ -177,19 +165,19 @@ pub fn cos_d_phi(a: Vec3, b: Vec3) -> Float {
     let axz = a.x * a.x + a.z * a.z;
     let bxz = b.x * b.x + b.z * b.z;
 
-    (abxz / Float::sqrt(axz * bxz)).clamp(-1.0, 1.0)
+    Float::clamp(abxz / Float::sqrt(axz * bxz), -1.0, 1.0)
 }
 
 #[inline]
 pub fn refract(v: Vec3, n: Vec3, eta: Float) -> Option<Vec3> {
     let cos_i = n.dot(v);
-    let sin_t2 = eta * eta * cos_i.mul_add(-cos_i, 1.0).max(0.0);
+    let sin_t2 = eta * eta * (1.0 - cos_i * cos_i).max(0.0);
 
     if sin_t2 > 1.0 {
         None
     } else {
         let cos_t = Float::sqrt(1.0 - sin_t2);
-        let right = eta.mul_add(cos_i, -cos_t);
+        let right = eta * cos_i - cos_t;
         let r = eta * -v + right * n;
 
         Some(r)
@@ -211,13 +199,25 @@ pub fn same_hemisphere(a: Vec3, b: Vec3) -> bool {
 }
 
 #[inline]
-pub fn world_to_bxdf(v: Vec3) -> Rot3 {
-    Rot3::between_vectors(v, bxdf_normal())
+pub fn world_to_bxdf(v: Vec3) -> Rotation {
+    if v == Vec3::unit_y() {
+        Rotation::None
+    } else if v == -Vec3::unit_y() {
+        Rotation::Flip
+    } else {
+        Rotation::Some(Rot3::between_vectors(v, bxdf_normal()))
+    }
 }
 
 #[inline]
-pub fn bxdf_to_world(v: Vec3) -> Rot3 {
-    Rot3::between_vectors(bxdf_normal(), v)
+pub fn bxdf_to_world(v: Vec3) -> Rotation {
+    if v == Vec3::unit_y() {
+        Rotation::None
+    } else if v == -Vec3::unit_y() {
+        Rotation::Flip
+    } else {
+        Rotation::Some(Rot3::between_vectors(bxdf_normal(), v))
+    }
 }
 
 bitflags::bitflags! {
@@ -333,9 +333,7 @@ pub trait BxDF: Send + Sync {
         outgoing: Vec3,
         indices: &[usize; PACKET_SIZE],
     ) -> [Float; PACKET_SIZE] {
-        let mut i = Index::new();
-        [0.0; PACKET_SIZE]
-            .map(|_| self.evaluate_lambda(incident, outgoing, indices[i.get_and_inc()]))
+        indices.map(|i| self.evaluate_lambda(incident, outgoing, i))
     }
 
     /// Evaluates the BxDF with possible spectral dependencies.
@@ -364,7 +362,7 @@ pub trait BxDF: Send + Sync {
     /// * `outgoing`: The outgoing light direction
     /// * `sample`: The sample space for randomization
     fn sample(&self, outgoing: Vec3, sample: Vec2) -> Option<BxDFSample<Spectrum>> {
-        let incident = flip_if_neg(sample_unit_hemisphere(sample));
+        let incident = sample_unit_hemisphere(sample);
         let spectrum = self.evaluate(incident, outgoing);
         let pdf = self.pdf(incident, outgoing);
 
@@ -387,7 +385,7 @@ pub trait BxDF: Send + Sync {
         sample: Vec2,
         indices: &[usize; PACKET_SIZE],
     ) -> BxDFSamplePacket {
-        let incident = flip_if_neg(sample_unit_hemisphere(sample));
+        let incident = sample_unit_hemisphere(sample);
         let spectrum = self.evaluate_packet(incident, outgoing, indices);
         let pdf = self.pdf(incident, outgoing);
 
@@ -412,7 +410,7 @@ pub trait BxDF: Send + Sync {
         sample: Vec2,
         index: usize,
     ) -> Option<BxDFSample<Float>> {
-        let incident = flip_if_neg(sample_unit_hemisphere(sample));
+        let incident = sample_unit_hemisphere(sample);
         let lambda = self.evaluate_lambda(incident, outgoing, index);
         let pdf = self.pdf(incident, outgoing);
 

@@ -20,6 +20,14 @@ impl SceneObject {
     }
 
     #[inline]
+    pub fn tag(&self) -> &str {
+        match self {
+            SceneObject::Emitter(e) => &e.tag,
+            SceneObject::Receiver(r) => &r.tag,
+        }
+    }
+
+    #[inline]
     pub fn emitter(&self) -> bool {
         match self {
             SceneObject::Emitter(_) => true,

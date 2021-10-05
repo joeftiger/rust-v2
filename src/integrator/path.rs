@@ -18,11 +18,9 @@ pub struct Path {
 #[typetag::serde]
 impl Integrator for Path {
     fn integrate(&self, scene: &Scene, primary_ray: Ray, pixel: &mut Pixel) {
-        if let Some(intersection) = scene.intersect(primary_ray) {
+        if let Some(mut hit) = scene.intersect(primary_ray) {
             let mut illumination = Spectrum::splat(0.0);
             let mut throughput = Spectrum::splat(1.0);
-
-            let mut hit = intersection;
 
             for _ in 0..self.max_depth {
                 let outgoing = -hit.i.incoming;

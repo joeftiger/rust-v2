@@ -383,6 +383,7 @@ impl TryFrom<MeshSerde> for Mesh {
                 if let Some(t) = conf.translation {
                     mesh.translate(t);
                 }
+                mesh.build_tree();
 
                 Ok(mesh)
             }

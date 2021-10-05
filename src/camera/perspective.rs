@@ -23,6 +23,7 @@ pub struct PerspectiveCamera {
     look_at: Mat4,
     bot_left: Vec2,
     top_right: Vec2,
+    res: UVec2,
     inv_res: Vec2,
 }
 
@@ -48,6 +49,7 @@ impl PerspectiveCamera {
             look_at,
             bot_left: bottom_left,
             top_right,
+            res: resolution,
             inv_res,
         }
     }
@@ -55,13 +57,17 @@ impl PerspectiveCamera {
 
 #[typetag::serde]
 impl Camera for PerspectiveCamera {
+    fn resolution(&self) -> UVec2 {
+        self.res
+    }
+
     fn primary_ray(&self, pixel: UVec2) -> Ray {
         let sample = self.sampler.sample();
         let direction = self.bot_left
             + (self.top_right - self.bot_left)
                 .mul_element_wise(pixel.cast().unwrap() + sample)
                 .mul_element_wise(self.inv_res);
-        let direction = Vec3::new(direction.x, direction.y, 1.0).normalize();
+        let direction = direction.extend(-1.0).normalize();
 
         let origin = self.look_at.transform_point(Point3::from_vec(Vec3::zero()));
         let direction = self.look_at.transform_vector(direction);
@@ -100,6 +106,7 @@ pub struct NaiveCamera {
     x_dir: Vec3,
     y_dir: Vec3,
     lower_left: Vec3,
+    res: UVec2,
 }
 
 impl NaiveCamera {
@@ -136,12 +143,17 @@ impl NaiveCamera {
             x_dir,
             y_dir,
             lower_left,
+            res: resolution,
         }
     }
 }
 
 #[typetag::serde]
 impl Camera for NaiveCamera {
+    fn resolution(&self) -> UVec2 {
+        self.res
+    }
+
     fn primary_ray(&self, pixel: UVec2) -> Ray {
         let sample = self.sampler.sample();
 

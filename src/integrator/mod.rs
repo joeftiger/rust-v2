@@ -18,6 +18,7 @@
 
 pub mod path;
 pub mod spectral;
+pub mod spectral_single;
 pub mod whitted;
 
 pub use path::*;
@@ -149,7 +150,7 @@ impl DirectIllumination {
                     emitter_sample.incident,
                     outgoing_world,
                     sampler.float(),
-                    BxDFFlag::ALL,
+                    BxDFFlag::empty(),
                     indices,
                 );
 
@@ -201,7 +202,7 @@ impl DirectIllumination {
                     emitter_sample.incident,
                     outgoing_world,
                     sampler.float(),
-                    BxDFFlag::ALL,
+                    BxDFFlag::empty(),
                     index,
                 );
 

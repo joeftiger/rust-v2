@@ -1,14 +1,13 @@
 use crate::renderer::Renderer;
 use crate::util::threadpool::Threadpool;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use image::{ImageBuffer, Rgb};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::{Deserialize, Serialize};
 use signal_hook::consts as signals;
 use std::os::raw::c_int;
 use std::sync::Arc;
 
-type Image = ImageBuffer<Rgb<u16>, Vec<u16>>;
-
+#[derive(Deserialize, Serialize)]
 pub struct Runtime {
     pub renderer: Arc<Renderer>,
     pub progress: Arc<AtomicUsize>,
@@ -19,13 +18,6 @@ impl Runtime {
         Self {
             renderer: Arc::new(renderer),
             progress: Arc::new(AtomicUsize::new(0)),
-        }
-    }
-
-    pub fn new2(renderer: Renderer, progress: usize) -> Self {
-        Self {
-            renderer: Arc::new(renderer),
-            progress: Arc::new(AtomicUsize::new(progress)),
         }
     }
 
@@ -100,21 +92,41 @@ impl Runtime {
         (threadpool, stop_watcher, tp, fp)
     }
 
-    pub fn save_image(&self) {
-        let res = self.renderer.sensor().resolution;
+    #[cfg(feature = "show-image")]
+    pub fn run_live(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
+        use core::time::Duration;
+        use show_image::{create_window, event};
 
-        let mut image: Image = ImageBuffer::new(res.x, res.y);
-        for tile in &self.renderer.sensor().tiles {
-            let tile = tile.lock().unwrap();
+        let window = create_window("Rust-V2", Default::default()).unwrap();
 
-            for px in &tile.pixels {
-                let rgb = px.average.into();
-                image.put_pixel(px.position.x, px.position.y, rgb);
+        let (threadpool, cancelled, tp, fp) = self.run();
+
+        'main: loop {
+            if let Ok(e) = window
+                .event_channel()
+                .unwrap()
+                .recv_timeout(Duration::from_secs(1))
+            {
+                if let event::WindowEvent::KeyboardInput(event) = e {
+                    if event.input.state.is_pressed() {
+                        if let Some(key) = event.input.key_code {
+                            match key {
+                                event::VirtualKeyCode::Escape => {
+                                    cancelled.store(true, Ordering::SeqCst);
+                                    break 'main;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let Err(err) = window.set_image("Rendering", self.renderer.get_image::<u8>()) {
+                eprintln!("{}\nSkipping this image!", err);
             }
         }
 
-        let path = self.output_path().to_string() + ".png";
-
-        image.save(&path).unwrap();
+        (threadpool, cancelled, tp, fp)
     }
 }

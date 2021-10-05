@@ -1,6 +1,5 @@
 use crate::bxdf::{cos_phi, cos_theta, sin_phi, sin_theta, BxDF, BxDFFlag};
 use crate::util::floats::EPSILON;
-use crate::util::Index;
 use crate::*;
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "f64"))]
@@ -102,8 +101,7 @@ impl BxDF for OrenNayar {
     ) -> [Float; PACKET_SIZE] {
         let oren_nayar = self.calc_param(incident, outgoing);
 
-        let mut i = Index::new();
-        [0.0; PACKET_SIZE].map(|_| self.r[indices[i.get_and_inc()]] * oren_nayar)
+        indices.map(|i| self.r[i] * oren_nayar)
     }
 
     fn evaluate_lambda(&self, incident: Vec3, outgoing: Vec3, index: usize) -> Float {
