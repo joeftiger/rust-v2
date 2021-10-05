@@ -1,9 +1,9 @@
 pub mod obj;
 
 use crate::geometry::bvh::Tree;
-use crate::geometry::{abs, max2, max3, max_index, min2, min3, Aabb, Geometry, Intersection, Ray};
+use crate::geometry::{abs, max3, max_index, min3, Aabb, Geometry, Intersection, Ray};
 use crate::{Rot3, Vec3};
-use cgmath::{Bounded, ElementWise, InnerSpace, Rotation};
+use cgmath::{ElementWise, InnerSpace, Rotation};
 use core::convert::TryFrom;
 use core::mem;
 use obj::ObjFile;
@@ -222,8 +222,6 @@ pub struct Mesh {
     faces: Vec<Face>,
     shading_mode: ShadingMode,
     #[serde(skip_serializing)]
-    bounds: Aabb,
-    #[serde(skip_serializing)]
     bvh: Tree,
 }
 
@@ -234,7 +232,6 @@ impl Clone for Mesh {
             normals: self.normals.clone(),
             faces: self.faces.clone(),
             shading_mode: self.shading_mode,
-            bounds: self.bounds,
             bvh: Default::default(),
         }
     }
@@ -247,20 +244,11 @@ impl Mesh {
         faces: Vec<Face>,
         shading_mode: ShadingMode,
     ) -> Self {
-        let min = vertices
-            .iter()
-            .fold(Vec3::max_value(), |acc, &next| min2(acc, next));
-        let max = vertices
-            .iter()
-            .fold(Vec3::min_value(), |acc, &next| max2(acc, next));
-        let bounds = Aabb::new(min, max);
-
         Self {
             vertices,
             normals,
             faces,
             shading_mode,
-            bounds,
             bvh: Default::default(),
         }
     }
@@ -269,9 +257,6 @@ impl Mesh {
         for v in &mut self.vertices {
             *v += translation;
         }
-
-        self.bounds.min += translation;
-        self.bounds.max += translation;
 
         self
     }
@@ -286,9 +271,6 @@ impl Mesh {
         for n in &mut self.normals {
             *n = n.mul_element_wise(scale_inv).normalize();
         }
-
-        self.bounds.min.mul_assign_element_wise(scale);
-        self.bounds.max.mul_assign_element_wise(scale);
 
         self
     }
@@ -319,7 +301,7 @@ impl Geometry for Mesh {
 
     #[inline]
     fn bounds(&self) -> Aabb {
-        self.bounds
+        self.bvh.bounds()
     }
 
     fn intersect(&self, mut ray: Ray) -> Option<Intersection> {

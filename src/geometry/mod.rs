@@ -34,11 +34,7 @@ fn min2(a: Vec3, b: Vec3) -> Vec3 {
 }
 #[inline]
 fn min3(a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
-    Vec3::new(
-        a.x.min(b.x).min(c.x),
-        a.y.min(b.y).min(c.y),
-        a.z.min(b.z).min(c.z),
-    )
+    min2(min2(a, b), c)
 }
 #[inline]
 fn max2(a: Vec3, b: Vec3) -> Vec3 {
@@ -46,11 +42,7 @@ fn max2(a: Vec3, b: Vec3) -> Vec3 {
 }
 #[inline]
 fn max3(a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
-    Vec3::new(
-        a.x.max(b.x).max(c.x),
-        a.y.max(b.y).max(c.y),
-        a.z.max(b.z).max(c.z),
-    )
+    max2(max2(a, b), c)
 }
 #[inline]
 pub fn min_val(v: Vec3) -> Float {
