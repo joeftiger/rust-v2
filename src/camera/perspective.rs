@@ -67,7 +67,7 @@ impl Camera for PerspectiveCamera {
             + (self.top_right - self.bot_left)
                 .mul_element_wise(pixel.cast().unwrap() + sample)
                 .mul_element_wise(self.inv_res);
-        let direction = direction.extend(-1.0).normalize();
+        let direction = direction.extend(1.0).normalize();
 
         let origin = self.look_at.transform_point(Point3::from_vec(Vec3::zero()));
         let direction = self.look_at.transform_vector(direction);
@@ -169,13 +169,20 @@ impl Camera for NaiveCamera {
 
 #[derive(Deserialize, Serialize)]
 enum NaiveConfig {
-    Full(NaiveCamera),
+    Full(Naive),
     Config(CameraConfig),
 }
 impl From<NaiveConfig> for NaiveCamera {
     fn from(conf: NaiveConfig) -> Self {
         match conf {
-            NaiveConfig::Full(c) => c,
+            NaiveConfig::Full(n) => Self {
+                sampler: n.sampler,
+                eye: n.eye,
+                x_dir: n.x_dir,
+                y_dir: n.y_dir,
+                lower_left: n.lower_left,
+                res: n.res
+            },
             NaiveConfig::Config(c) => {
                 Self::new(c.sampler, c.eye, c.target, c.up, c.fov, c.resolution)
             }
@@ -183,7 +190,24 @@ impl From<NaiveConfig> for NaiveCamera {
     }
 }
 impl From<NaiveCamera> for NaiveConfig {
-    fn from(cam: NaiveCamera) -> Self {
-        Self::Full(cam)
+    fn from(c: NaiveCamera) -> Self {
+        Self::Full(Naive {
+            sampler: c.sampler,
+            eye: c.eye,
+            x_dir: c.x_dir,
+            y_dir: c.y_dir,
+            lower_left: c.lower_left,
+            res: c.res
+        })
     }
+}
+
+#[derive(Deserialize, Serialize)]
+struct Naive {
+    sampler: CameraSampler,
+    eye: Vec3,
+    x_dir: Vec3,
+    y_dir: Vec3,
+    lower_left: Vec3,
+    res: UVec2,
 }
