@@ -101,29 +101,14 @@ impl Runtime {
 
         let (threadpool, cancelled, tp, fp) = self.run();
 
-        'main: loop {
-            if let Ok(e) = window
-                .event_channel()
-                .unwrap()
-                .recv_timeout(Duration::from_secs(1))
-            {
-                if let event::WindowEvent::KeyboardInput(event) = e {
-                    if event.input.state.is_pressed() {
-                        if let Some(key) = event.input.key_code {
-                            match key {
-                                event::VirtualKeyCode::Escape => {
-                                    cancelled.store(true, Ordering::SeqCst);
-                                    break 'main;
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
-            }
+        loop {
+            thread::sleep(Duration::from_secs(1));
 
-            if let Err(err) = window.set_image("Rendering", self.renderer.get_image::<u8>()) {
-                eprintln!("{}\nSkipping this image!", err);
+            if window
+                .set_image("Rendering", self.renderer.get_image::<u8>())
+                .is_err()
+            {
+                break;
             }
         }
 

@@ -4,17 +4,19 @@ use crate::config::Config;
 use crate::integrator::Integrator;
 use crate::scene::Scene;
 use crate::Spectrum;
-use core::fmt;
 use image::{ImageBuffer, Rgb};
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
-#[derive(Serialize)]
+#[derive(Deserialize)]
+#[serde(from = "RendererDe")]
 pub struct Renderer {
     pub config: Config,
     pub camera: Box<dyn Camera>,
-    sensor: Sensor,
-    integrator: Box<dyn Integrator>,
-    scene: Scene,
+    // TODO: remove pub
+    pub sensor: Sensor,
+    pub integrator: Box<dyn Integrator>,
+    #[serde(default)]
+    pub scene: Scene,
 }
 
 impl Renderer {
@@ -65,7 +67,7 @@ impl Renderer {
     }
 }
 
-impl<'de> Deserialize<'de> for Renderer {
+/*impl<'de> Deserialize<'de> for Renderer {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -165,7 +167,7 @@ impl<'de> Deserialize<'de> for Renderer {
                 let sensor = sensor.unwrap_or_else(|| Sensor::new(camera.resolution()));
                 let integrator =
                     integrator.ok_or_else(|| de::Error::missing_field("integrator"))?;
-                let scene = scene.ok_or_else(|| de::Error::missing_field("scene"))?;
+                let scene = scene.unwrap_or_else(Scene::default);
 
                 Ok(Renderer::new(config, camera, sensor, integrator, scene))
             }
@@ -174,4 +176,71 @@ impl<'de> Deserialize<'de> for Renderer {
         const FIELDS: &[&str] = &["config", "camera", "sensor", "integrator", "scene"];
         deserializer.deserialize_struct("Renderer", FIELDS, RendererVisitor)
     }
+}*/
+
+impl Serialize for Renderer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        RendererSer::Checkpoint {
+            config: &self.config,
+            camera: &*self.camera,
+            sensor: &self.sensor,
+            integrator: &*self.integrator,
+            scene: &self.scene,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl From<RendererDe> for Renderer {
+    fn from(de: RendererDe) -> Self {
+        match de {
+            RendererDe::Checkpoint {
+                config,
+                camera,
+                sensor,
+                integrator,
+                scene,
+            } => Self::new(config, camera, sensor, integrator, scene),
+            RendererDe::Config {
+                config,
+                camera,
+                integrator,
+                scene,
+            } => {
+                let res = camera.resolution();
+                Self::new(config, camera, Sensor::new(res), integrator, scene)
+            }
+        }
+    }
+}
+
+#[derive(Serialize)]
+enum RendererSer<'a> {
+    Checkpoint {
+        config: &'a Config,
+        camera: &'a dyn Camera,
+        sensor: &'a Sensor,
+        integrator: &'a dyn Integrator,
+        scene: &'a Scene,
+    },
+}
+
+#[derive(Deserialize)]
+enum RendererDe {
+    Checkpoint {
+        config: Config,
+        camera: Box<dyn Camera>,
+        sensor: Sensor,
+        integrator: Box<dyn Integrator>,
+        scene: Scene,
+    },
+    Config {
+        config: Config,
+        camera: Box<dyn Camera>,
+        integrator: Box<dyn Integrator>,
+        scene: Scene,
+    },
 }

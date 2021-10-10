@@ -1,4 +1,4 @@
-(
+Config (
     config: (
         output: "dragon",
         passes: 10000,

@@ -1,11 +1,11 @@
-(
+Config (
     config: (
         output: "cornell",
-        passes: 10000,
+        passes: 1000,
         threads: None,
     ),
     camera: {
-        "PerspectiveCamera": Config ((
+        "NaiveCamera": Config ((
             sampler: Random,
             eye: (
                 x: 0,
@@ -24,13 +24,14 @@
             ),
             fov: 70,
             resolution: (
-                x: 512,
-                y: 512,
+                x: 2048,
+                y: 2048,
             ),
         )),
     },
     integrator: {
-        "SpectralPath": (
+        // "SpectralPath": (
+        "Path": (
             max_depth: 8,
             sampler: Random,
             spectral_sampler: Hero,
@@ -194,7 +195,7 @@
                                 t: Constant(1),
                                 fresnel: (
                                     eta_i: Air,
-                                    eta_t: Sapphire,
+                                    eta_t: Linear(1.2, 1.8),
                                 ),
                             ),
                         },
@@ -212,7 +213,7 @@
                         radius: 0.5,
                     ),
                 },
-                emission: MulColor(4, White),
+                emission: MulColor(2, White),
             )),
         ],
     ),

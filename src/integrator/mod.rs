@@ -16,6 +16,7 @@
 //! * **Kajiya** path tracing: `E[(D|G|S)+(D|G)]L`
 //! * **Goral** radiosity: `ED*L`
 
+pub mod dummy;
 pub mod path;
 pub mod spectral;
 pub mod spectral_single;

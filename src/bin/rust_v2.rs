@@ -2,7 +2,7 @@ use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use rust_v2::runtime::Runtime;
 use std::env::args;
 use std::sync::atomic::Ordering;
-use std::{fs, thread};
+use std::fs;
 
 #[cfg(not(feature = "show-image"))]
 fn main() {
@@ -55,17 +55,14 @@ fn deserialize_runtime(path: &str) -> Runtime {
 }
 
 fn save_progress(runtime: Runtime) {
-    thread::Builder::new()
-        .stack_size(32 * 1024 * 1024)
-        .spawn(move || {
-            let binary = bincode::serialize(&runtime).unwrap();
-            let compressed = compress_prepend_size(&binary);
-            let path = runtime.output_path().to_string() + ".bin";
-            fs::write(path, &compressed).unwrap();
-        })
-        .unwrap()
-        .join()
-        .unwrap();
+    let binary = bincode::serialize(&runtime).unwrap();
+    debug_assert!(bincode::deserialize::<Runtime>(&binary).is_ok());
+
+    let compressed = compress_prepend_size(&binary);
+    debug_assert_eq!(&binary, &decompress_size_prepended(&compressed).unwrap());
+
+    let path = runtime.output_path().to_string() + ".bin";
+    fs::write(path, &compressed).unwrap();
 }
 
 fn save_image(runtime: &Runtime) {

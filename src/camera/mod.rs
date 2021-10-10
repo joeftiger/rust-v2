@@ -3,6 +3,7 @@ pub use perspective::*;
 use crate::geometry::Ray;
 use crate::UVec2;
 
+pub mod dummy;
 pub mod perspective;
 pub mod sensor;
 

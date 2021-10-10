@@ -181,7 +181,7 @@ impl From<NaiveConfig> for NaiveCamera {
                 x_dir: n.x_dir,
                 y_dir: n.y_dir,
                 lower_left: n.lower_left,
-                res: n.res
+                res: n.res,
             },
             NaiveConfig::Config(c) => {
                 Self::new(c.sampler, c.eye, c.target, c.up, c.fov, c.resolution)
@@ -197,7 +197,7 @@ impl From<NaiveCamera> for NaiveConfig {
             x_dir: c.x_dir,
             y_dir: c.y_dir,
             lower_left: c.lower_left,
-            res: c.res
+            res: c.res,
         })
     }
 }

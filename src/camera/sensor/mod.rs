@@ -87,13 +87,11 @@ impl Serialize for Sensor {
 }
 
 #[derive(Serialize)]
-#[serde(untagged)]
 enum SensorSer<'a> {
     Checkpoint(UVec2, &'a [Mutex<SensorTile>]),
 }
 
 #[derive(Deserialize)]
-#[serde(untagged)]
 enum SensorDe {
     Checkpoint(UVec2, Vec<Mutex<SensorTile>>),
     Config(UVec2),
