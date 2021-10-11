@@ -4,31 +4,16 @@
 //!
 //! # Resources
 //! * Data taken from [here](https://refractiveindex.info/?shelf=main&book=Al2O3&page=Querry-o) on
-//! 2021-02-21.
-//! * Sellmeier data taken from [here](https://en.wikipedia.org/wiki/Sellmeier_equation) on
-//! 2021-02-21.
+//! 2021-10-11.
 
 use crate::Float;
-
-/// Computes the refractive index of **sapphire** according to the Sellmeier equation.
-///
-/// # Performance
-/// Benchmarked to be the fastest algorithm to compute the refractive index for a specific wavelength.
-///
-/// # Constraints
-/// * `lambda` - Should be finite (neither infinite nor `NaN`).
-///
-/// # Arguments
-/// * `lambda` - The wavelength in **µm**
-///
-/// # Returns
-/// * The refractive index
 #[inline(always)]
 pub fn sellmeier_n(lambda: Float) -> Float {
     let l2 = lambda * lambda;
-    let one = 1.43134930 * l2 / (l2 - 5.2799261e-3);
-    let two = 0.65054713 * l2 / (l2 - 1.42382647e-2);
-    let three = 5.3414021 * l2 / (l2 - 325.017834);
+
+    let one = 1.4313493 * l2 / (l2 - 0.0726631);
+    let two = 0.65054713 * l2 / (l2 - 0.1193242);
+    let three = 5.3414021 * l2 / (l2 - 18.028251);
 
     Float::sqrt(1.0 + one + two + three)
 }

@@ -4,9 +4,7 @@
 //!
 //! # Resources
 //! * Data taken from [here](https://refractiveindex.info/?shelf=3d&book=glass&page=BK7) on
-//! 2021-02-21.
-//! * Sellmeier data taken from [here](https://en.wikipedia.org/wiki/Sellmeier_equation) on
-//! 2021-02-21.
+//! 2021-10-11.
 
 use crate::Float;
 
@@ -28,8 +26,8 @@ pub fn sellmeier_n(lambda: Float) -> Float {
     debug_assert!(lambda.is_finite());
 
     let l2 = lambda * lambda;
-    let one = 1.03961212 * l2 / (l2 - 6.00069867e-3);
-    let two = 0.231792344 * l2 / (l2 - 2.00179144e-2);
+    let one = 1.03961212 * l2 / (l2 - 0.00600069867);
+    let two = 0.231792344 * l2 / (l2 - 0.0200179144);
     let three = 1.01046945 * l2 / (l2 - 103.560653);
 
     Float::sqrt(1.0 + one + two + three)

@@ -1,4 +1,5 @@
 pub mod air;
+pub mod diesel;
 pub mod glass;
 pub mod sapphire;
 pub mod water;
@@ -20,32 +21,35 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum RefractiveType {
-    Air,
     Vacuum,
-    Water,
+    Linear(Float, Float),
+    Air,
+    Diesel,
     Glass,
     Sapphire,
-    Linear(Float, Float),
+    Water,
 }
 
 impl RefractiveType {
-    /// Returns the refractive index (inaccurate for different wavelengths).
+    /// Returns the refractive index (inaccurate for different wavelengths) of `(`[LAMBDA_START] + [LAMBDA_END]`) / 2`.
     ///
     /// # Returns
     /// * The refractive index
     #[inline]
     pub fn n_uniform(self) -> Float {
         match self {
-            RefractiveType::Air => 1.00029,
             RefractiveType::Vacuum => 1.0,
-            RefractiveType::Water => 1.3325,
-            RefractiveType::Glass => 1.5168,
-            RefractiveType::Sapphire => 1.7490,
             RefractiveType::Linear(min, max) => 0.5 * (min + max),
+            RefractiveType::Air => 1.00028880,
+            RefractiveType::Diesel => 1.6147,
+            RefractiveType::Glass => 1.5183,
+            RefractiveType::Sapphire => 1.7525,
+            RefractiveType::Water => 1.3330,
         }
     }
 
-    /// Returns the extinction coefficient (if it exists).
+    /// Returns the refractive coefficient (if it exists, inaccurate for different wavelengths) of
+    /// `(`[LAMBDA_START] + [LAMBDA_END]`) / 2`.
     ///
     /// # Returns
     /// * `Some` extinction coefficient, or
@@ -53,9 +57,10 @@ impl RefractiveType {
     #[inline]
     pub fn k_uniform(self) -> Option<Float> {
         match self {
-            RefractiveType::Water => Some(7.2792e-9),
-            RefractiveType::Glass => Some(9.7525e-9),
-            RefractiveType::Sapphire => Some(0.020900),
+            RefractiveType::Diesel => Some(0.27850),
+            RefractiveType::Glass => Some(7.5715e-9),
+            RefractiveType::Sapphire => Some(0.020500),
+            RefractiveType::Water => Some(2.2880e-9),
             _ => None,
         }
     }
@@ -70,15 +75,16 @@ impl RefractiveType {
     #[inline]
     pub fn n(self, lambda: Float) -> Float {
         match self {
-            RefractiveType::Air => air::sellmeier_n(lambda),
             RefractiveType::Vacuum => 1.0,
-            RefractiveType::Water => search_lambda(&water::INDEX, &water::N, lambda),
-            RefractiveType::Glass => glass::sellmeier_n(lambda),
-            RefractiveType::Sapphire => sapphire::sellmeier_n(lambda),
             RefractiveType::Linear(min, max) => {
                 let t = floats::lerp_inv(lambda, LAMBDA_START, LAMBDA_END);
                 t.lerp(min, max)
             }
+            RefractiveType::Air => air::sellmeier_n(lambda),
+            RefractiveType::Diesel => search_lambda(&diesel::INDEX, &diesel::N, lambda),
+            RefractiveType::Glass => glass::sellmeier_n(lambda),
+            RefractiveType::Sapphire => sapphire::sellmeier_n(lambda),
+            RefractiveType::Water => search_lambda(&water::INDEX, &water::N, lambda),
         }
     }
 
@@ -92,11 +98,12 @@ impl RefractiveType {
     /// * `None`
     pub fn k(self, lambda: Float) -> Option<Float> {
         match self {
-            RefractiveType::Water => Some(search_lambda(&water::INDEX, &water::K, lambda)),
+            RefractiveType::Diesel => Some(search_lambda(&diesel::INDEX, &diesel::K, lambda)),
             RefractiveType::Glass => Some(search_lambda(&glass::INDEX_K, &glass::K, lambda)),
             RefractiveType::Sapphire => {
                 Some(search_lambda(&sapphire::INDEX_K, &sapphire::K, lambda))
             }
+            RefractiveType::Water => Some(search_lambda(&water::INDEX, &water::K, lambda)),
             _ => None,
         }
     }
