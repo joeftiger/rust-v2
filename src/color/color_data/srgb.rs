@@ -1,51 +1,27 @@
 #![allow(clippy::excessive_precision)]
 use crate::Float;
 
-#[rustfmt::skip]
-pub const DARK_SKIN:     [Float; 3] = [0.451985507348026, 0.320827324940405, 0.265433396324784];
-#[rustfmt::skip]
-pub const LIGHT_SKIN:    [Float; 3] = [0.765972935723141, 0.582738716853994, 0.503055950907360];
-#[rustfmt::skip]
-pub const BLUE_SKY:      [Float; 3] = [0.365221128960770, 0.481216296689985, 0.614439013487211];
-#[rustfmt::skip]
-pub const FOLIAGE:       [Float; 3] = [0.355649637522838, 0.424161374740617, 0.253370936701835];
-#[rustfmt::skip]
-pub const BLUE_FLOWER:   [Float; 3] = [0.510656240093606, 0.504123153746312, 0.687225606075082];
-#[rustfmt::skip]
-pub const BLUISH_GREEN:  [Float; 3] = [0.386089655534932, 0.747829256672327, 0.668344206176023];
-#[rustfmt::skip]
-pub const ORANGE:        [Float; 3] = [0.863093418722002, 0.483523828968116, 0.179077843041195];
-#[rustfmt::skip]
-pub const PURPLISH_BLUE: [Float; 3] = [0.282440643630781, 0.359504879519143, 0.659181811904566];
-#[rustfmt::skip]
-pub const MODERATE_RED:  [Float; 3] = [0.762071779791923, 0.328914914848483, 0.381460259554855];
-#[rustfmt::skip]
-pub const PURPLE:        [Float; 3] = [0.355981329046635, 0.232274686016055, 0.409221031391268];
-#[rustfmt::skip]
-pub const YELLOW_GREEN:  [Float; 3] = [0.629798142147472, 0.740552451504050, 0.243107906845461];
-#[rustfmt::skip]
-pub const ORANGE_YELLOW: [Float; 3] = [0.896249844549554, 0.629593762645567, 0.158306058293684];
-#[rustfmt::skip]
-pub const BLUE:          [Float; 3] = [0.165488593203341, 0.245483591390485, 0.576195209901642];
-#[rustfmt::skip]
-pub const GREEN:         [Float; 3] = [0.283264799647560, 0.585394786073615, 0.281234622466667];
-#[rustfmt::skip]
-pub const RED:           [Float; 3] = [0.686533689604943, 0.195538129501934, 0.221885082963718];
-#[rustfmt::skip]
-pub const YELLOW:        [Float; 3] = [0.934061366943582, 0.782979200607304, 0.083741974909830];
-#[rustfmt::skip]
-pub const MAGENTA:       [Float; 3] = [0.737111726481978, 0.329748012747315, 0.588239890055834];
-#[rustfmt::skip]
-pub const CYAN:          [Float; 3] = [-0.185440641648003,0.536010099061219, 0.652102190441094];
-#[rustfmt::skip]
-pub const WHITE:         [Float; 3] = [0.962070206926636, 0.962026354255479, 0.940214035518687];
-#[rustfmt::skip]
-pub const GREY_1:        [Float; 3] = [0.786738853998503, 0.792583731311461, 0.787707064909730];
-#[rustfmt::skip]
-pub const GREY_2:        [Float; 3] = [0.630287624455572, 0.635143395725413, 0.633147395616370];
-#[rustfmt::skip]
-pub const GREY_3:        [Float; 3] = [0.470151683602212, 0.475953628435172, 0.474854663555374];
-#[rustfmt::skip]
-pub const GREY_4:        [Float; 3] = [0.326433680189283, 0.331779293144700, 0.333384558671776];
-#[rustfmt::skip]
-pub const BLACK:         [Float; 3] = [0.195684876663901, 0.196313606429862, 0.198420076807872];
+pub const DARK_SKIN: [Float; 3] = [0.4775107, 0.30987367, 0.24771267];
+pub const LIGHT_SKIN: [Float; 3] = [0.8122525, 0.562074, 0.47094494];
+pub const BLUE_SKY: [Float; 3] = [0.40961564, 0.46135896, 0.5825827];
+pub const FOLIAGE: [Float; 3] = [0.38478225, 0.40936416, 0.23564094];
+pub const BLUE_FLOWER: [Float; 3] = [0.55448234, 0.48341, 0.65147775];
+pub const BLUISH_GREEN: [Float; 3] = [0.45867902, 0.72056586, 0.629175];
+pub const ORANGE: [Float; 3] = [0.9004802, 0.4720068, 0.14961249];
+pub const PURPLISH_BLUE: [Float; 3] = [0.32167614, 0.34231296, 0.6246479];
+pub const MODERATE_RED: [Float; 3] = [0.8004311, 0.3143733, 0.3575602];
+pub const PURPLE: [Float; 3] = [0.3793291, 0.22127551, 0.39034075];
+pub const YELLOW_GREEN: [Float; 3] = [0.6751531, 0.717416, 0.21381763];
+pub const ORANGE_YELLOW: [Float; 3] = [0.9369767, 0.6130936, 0.120650135];
+pub const BLUE: [Float; 3] = [0.20235729, 0.23109421, 0.54421353];
+pub const GREEN: [Float; 3] = [0.33620432, 0.56473535, 0.2591517];
+pub const RED: [Float; 3] = [0.7230869, 0.17963332, 0.20357504];
+pub const YELLOW: [Float; 3] = [0.9827271, 0.76031953, -0.012222997];
+pub const MAGENTA: [Float; 3] = [0.7787738, 0.3108825, 0.5595016];
+pub const CYAN: [Float; 3] = [-0.009866804, 0.51248103, 0.61467856];
+pub const WHITE: [Float; 3] = [1.0303842, 0.92902267, 0.88843536];
+pub const GREY_1: [Float; 3] = [0.8436998, 0.764978, 0.744663];
+pub const GREY_2: [Float; 3] = [0.67656463, 0.612685, 0.5981615];
+pub const GREY_3: [Float; 3] = [0.50570637, 0.45868504, 0.4479636];
+pub const GREY_4: [Float; 3] = [0.35234404, 0.31917778, 0.31384808];
+pub const BLACK: [Float; 3] = [0.21260649, 0.18810001, 0.1858032];
