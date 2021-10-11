@@ -30,9 +30,10 @@ impl Runtime {
         watcher
     }
 
-    fn create_bars(tiles: usize, passes: usize) -> (ProgressBar, ProgressBar) {
-        let tp_template = ProgressStyle::default_bar()
-            .template("Render tiles:  {bar:40.cyan/white} {percent}% [{eta_precise} remaining]");
+    fn create_bars(&self, tiles: usize, passes: usize) -> (ProgressBar, ProgressBar) {
+        let tp_template = ProgressStyle::default_bar().template(
+            "Render tiles:  {bar:40.cyan/white} {percent}% [{eta_precise} remaining]\n{msg}",
+        );
         let fp_template = ProgressStyle::default_bar()
             .template("Render frames: {bar:40.cyan/white} {pos}/{len} {per_sec}");
         let bar = MultiProgress::new();
@@ -56,10 +57,13 @@ impl Runtime {
             Some(Box::new(move || c.store(true, Ordering::SeqCst))),
         );
 
-        let fram_tiles = self.renderer.sensor().num_tiles();
-        let total_tiles = fram_tiles * self.renderer.config.passes;
+        let frame_tiles = self.renderer.sensor().num_tiles();
+        let total_tiles = frame_tiles * self.renderer.config.passes;
 
-        let (tp, fp) = Self::create_bars(total_tiles, self.renderer.config.passes);
+        let (tp, fp) = self.create_bars(total_tiles, self.renderer.config.passes);
+        let checkpointed_progress = self.progress.load(Ordering::SeqCst);
+        tp.inc(checkpointed_progress as u64);
+        fp.inc((checkpointed_progress / frame_tiles) as u64);
 
         for _ in 0..threads {
             let c = Arc::clone(&stop_watcher);
@@ -79,11 +83,11 @@ impl Runtime {
                     break;
                 }
 
-                let index = tile_index % fram_tiles;
+                let index = tile_index % frame_tiles;
                 r.integrate(index);
 
                 tp.inc(1);
-                if index == fram_tiles - 1 {
+                if index == frame_tiles - 1 {
                     fp.inc(1);
                 }
             })
@@ -93,25 +97,40 @@ impl Runtime {
     }
 
     #[cfg(feature = "show-image")]
-    pub fn run_live(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
+    pub fn run_live(
+        &self,
+    ) -> (
+        Threadpool,
+        Threadpool,
+        Arc<AtomicBool>,
+        ProgressBar,
+        ProgressBar,
+    ) {
         use core::time::Duration;
-        use show_image::{create_window, event};
+        use show_image::create_window;
 
         let window = create_window("Rust-V2", Default::default()).unwrap();
 
-        let (threadpool, cancelled, tp, fp) = self.run();
+        let (render_pool, cancelled, tp, fp) = self.run();
 
-        loop {
-            thread::sleep(Duration::from_secs(1));
-
-            if window
-                .set_image("Rendering", self.renderer.get_image::<u8>())
-                .is_err()
-            {
-                break;
+        let c = cancelled.clone();
+        let r = self.renderer.clone();
+        let termination = Arc::new(AtomicBool::new(false));
+        let t = termination.clone();
+        let image_pool = Threadpool::new(
+            1,
+            Some(1),
+            Some(Box::new(move || t.store(true, Ordering::Relaxed))),
+        );
+        image_pool.execute(move || {
+            while termination.load(Ordering::Relaxed) && c.load(Ordering::Relaxed) {
+                if let Err(e) = window.set_image("Rendering", r.get_image::<u8>()) {
+                    tp.set_message(e);
+                    break;
+                }
             }
-        }
+        });
 
-        (threadpool, cancelled, tp, fp)
+        (image_pool, render_pool, cancelled, tp, fp)
     }
 }

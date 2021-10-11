@@ -1,8 +1,8 @@
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use rust_v2::runtime::Runtime;
 use std::env::args;
-use std::sync::atomic::Ordering;
 use std::fs;
+use std::sync::atomic::Ordering;
 
 #[cfg(not(feature = "show-image"))]
 fn main() {
@@ -21,11 +21,13 @@ fn run() {
     let runtime = deserialize_runtime(&scene_path);
 
     #[cfg(not(feature = "show-image"))]
-    let (pool, cancelled, tp, fp) = runtime.run();
+    let (render_pool, cancelled, tp, fp) = runtime.run();
     #[cfg(feature = "show-image")]
-    let (pool, cancelled, tp, fp) = runtime.run_live();
+    let (image_pool, render_pool, cancelled, tp, fp) = runtime.run_live();
 
-    pool.join();
+    render_pool.join();
+    #[cfg(feature = "show-image")]
+    image_pool.terminate();
 
     match cancelled.load(Ordering::SeqCst) {
         true => {
