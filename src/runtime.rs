@@ -46,7 +46,9 @@ impl Runtime {
     }
 
     pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
-        let stop_watcher = Self::watch(signals::SIGTERM, Arc::new(AtomicBool::new(false)));
+        let stop_watcher = Arc::new(AtomicBool::new(false));
+        let stop_watcher = Self::watch(signals::SIGUSR1, stop_watcher);
+        let stop_watcher = Self::watch(signals::SIGTERM, stop_watcher);
         let stop_watcher = Self::watch(signals::SIGINT, stop_watcher);
 
         let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
