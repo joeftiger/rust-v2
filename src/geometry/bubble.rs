@@ -1,6 +1,6 @@
-use cgmath::InnerSpace;
 use crate::geometry::{Aabb, Geometry, Intersection, Ray, Sphere};
 use crate::{Float, Vec3};
+use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -12,7 +12,10 @@ pub struct Bubble {
 impl Bubble {
     #[inline]
     pub const fn new(center: Vec3, inner_radius: Float, outer_radius: Float) -> Self {
-        Self { inner: Sphere::new(center, inner_radius), outer: Sphere::new(center, outer_radius) }
+        Self {
+            inner: Sphere::new(center, inner_radius),
+            outer: Sphere::new(center, outer_radius),
+        }
     }
 }
 
@@ -55,4 +58,3 @@ impl Geometry for Bubble {
         self.outer.intersects(ray) || self.inner.intersects(ray)
     }
 }
-

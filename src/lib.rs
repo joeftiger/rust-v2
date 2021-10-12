@@ -36,6 +36,6 @@ pub type Mat4 = Matrix4<Float>;
 
 #[cfg(feature = "spectral")]
 pub const PACKET_SIZE: usize = 4;
-#[cfg(any(feature = "srgb", feature="xyz"))]
+#[cfg(any(feature = "srgb", feature = "xyz"))]
 pub const PACKET_SIZE: usize = Spectrum::size(); // DO NOT CHANGE
 pub const SENSOR_TILE_WIDTH: u32 = 16;

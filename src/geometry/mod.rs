@@ -1,23 +1,23 @@
 pub use aabb::*;
+pub use bubble::*;
 pub use mesh::*;
 pub use plane::*;
 pub use point::*;
 pub use ray::*;
 pub use sphere::*;
-pub use bubble::*;
 
 use crate::util::floats::BIG_EPSILON;
 use crate::{Float, Vec3};
 use cgmath::InnerSpace;
 
 pub mod aabb;
+pub mod bubble;
 pub mod bvh;
 pub mod mesh;
 pub mod plane;
 pub mod point;
 pub mod ray;
 pub mod sphere;
-pub mod bubble;
 
 /// The unit vectors in all directions.
 #[rustfmt::skip]
