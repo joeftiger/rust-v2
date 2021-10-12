@@ -48,7 +48,6 @@ impl Runtime {
     pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
         let stop_watcher = Arc::new(AtomicBool::new(false));
         let stop_watcher = Self::watch(signals::SIGUSR1, stop_watcher);
-        let stop_watcher = Self::watch(signals::SIGTERM, stop_watcher);
         let stop_watcher = Self::watch(signals::SIGINT, stop_watcher);
 
         let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
@@ -108,7 +107,6 @@ impl Runtime {
         ProgressBar,
         ProgressBar,
     ) {
-        use core::time::Duration;
         use show_image::create_window;
 
         let window = create_window("Rust-V2", Default::default()).unwrap();
@@ -124,10 +122,11 @@ impl Runtime {
             Some(1),
             Some(Box::new(move || t.store(true, Ordering::Relaxed))),
         );
+        let tp_clone = tp.clone();
         image_pool.execute(move || {
             while termination.load(Ordering::Relaxed) && c.load(Ordering::Relaxed) {
                 if let Err(e) = window.set_image("Rendering", r.get_image::<u8>()) {
-                    tp.set_message(e);
+                    tp_clone.set_message(e.to_string());
                     break;
                 }
             }
