@@ -1,7 +1,15 @@
 use crate::util::Index;
 use crate::{Spectrum, PACKET_SIZE};
-use fastrand::usize as rand;
+use core::ops::RangeBounds;
 use serde::{Deserialize, Serialize};
+
+thread_local! {
+    static RNG: fastrand::Rng = fastrand::Rng::with_seed(0);
+}
+
+fn rand(range: impl RangeBounds<usize>) -> usize {
+    RNG.with(|rng| rng.usize(range))
+}
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum SpectralSampler {
@@ -38,7 +46,7 @@ impl SpectralSampler {
                 if PACKET_SIZE == Spectrum::size() {
                     indices.iter_mut().enumerate().for_each(|(i, idx)| *idx = i);
                 } else {
-                    let hero = fastrand::usize(0..Spectrum::size());
+                    let hero = rand(0..Spectrum::size());
 
                     indices
                         .iter_mut()
