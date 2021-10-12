@@ -1,7 +1,7 @@
 Config (
     config: (
         output: "cornell",
-        passes: 1000,
+        passes: 16384,
         threads: None,
     ),
     camera: {
@@ -24,14 +24,14 @@ Config (
             ),
             fov: 70,
             resolution: (
-                x: 2048,
-                y: 2048,
+                x: 512,
+                y: 512,
             ),
         )),
     },
     integrator: {
         // "SpectralPath": (
-        "Path": (
+        "SpectralPath": (
             max_depth: 8,
             sampler: Random,
             spectral_sampler: Hero,
@@ -191,8 +191,8 @@ Config (
                     bxdfs: [
                         {
                             "FresnelSpecular": (
-                                r: Constant(1),
-                                t: Constant(1),
+                                r: Color(White),
+                                t: Color(White),
                                 fresnel: (
                                     eta_i: Air,
                                     eta_t: Linear(1.2, 1.8),
@@ -213,7 +213,7 @@ Config (
                         radius: 0.5,
                     ),
                 },
-                emission: MulColor(2, White),
+                emission: MulColor(4, White),
             )),
         ],
     ),
