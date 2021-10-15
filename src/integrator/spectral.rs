@@ -171,11 +171,6 @@ impl SpectralPath {
 impl Integrator for SpectralPath {
     fn integrate(&self, scene: &Scene, primary_ray: Ray, pixel: &mut Pixel) {
         if let Some(hit) = scene.intersect(primary_ray) {
-            #[cfg(debug_assertions)]
-            if hit.object.tag() == "debug" {
-                println!("Debug");
-            }
-
             let indices = self.spectral_sampler.create();
             let mut illumination = [0.0; PACKET_SIZE];
             let mut throughput = [1.0; PACKET_SIZE];
