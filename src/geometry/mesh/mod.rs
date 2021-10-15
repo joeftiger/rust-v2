@@ -218,6 +218,7 @@ pub enum ShadingMode {
 #[serde(into = "MeshSerde")]
 pub struct Mesh {
     vertices: Vec<Vec3>,
+    #[serde(default)]
     normals: Vec<Vec3>,
     faces: Vec<Face>,
     shading_mode: ShadingMode,
