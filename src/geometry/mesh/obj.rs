@@ -80,7 +80,7 @@ impl ObjFile {
         Ok(Vec3::new(x, y, z))
     }
 
-    fn parse_face_component(part: &str) -> Result<(u32, Option<u32>), String> {
+    fn parse_face_component(part: &str) -> Result<(u32, u32), String> {
         let mut split = part.splitn(3, '/');
 
         let v = split
@@ -93,8 +93,8 @@ impl ObjFile {
         let mut split = split.skip(1);
 
         let vn = match split.next() {
-            Some(s) => Some(s.parse::<u32>().map_err(|e| e.to_string())?),
-            None => None,
+            Some(s) => s.parse::<u32>().map_err(|e| e.to_string())?,
+            None => v,
         };
 
         Ok((v, vn))
@@ -116,11 +116,7 @@ impl ObjFile {
         )?;
 
         let v = (v0 - 1, v1 - 1, v2 - 1);
-        let vn = match (n0, n1, n2) {
-            (None, None, None) => None,
-            (Some(a), Some(b), Some(c)) => Some((a - 1, b - 1, c - 1)),
-            _ => return Err("invalid vertex normal mixup".into()),
-        };
+        let vn = (n0 - 1, n1 - 1, n2 - 1);
 
         Ok(Face::new(v, vn))
     }

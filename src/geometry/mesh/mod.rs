@@ -2,12 +2,12 @@ pub mod obj;
 
 use crate::geometry::bvh::Tree;
 use crate::geometry::{abs, max3, max_index, min3, Aabb, Geometry, Intersection, Ray};
-use crate::{Rot3, Vec3};
-use cgmath::{ElementWise, InnerSpace, Rotation};
+use crate::{Float, Rot3, Vec3};
+use cgmath::{ElementWise, InnerSpace, Rotation, Zero};
 use core::convert::TryFrom;
 use core::mem;
 use obj::ObjFile;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 /// A triangle consists of vertex indices `(v0, v1, v2)`.
 ///
@@ -15,12 +15,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Face {
     pub v: (u32, u32, u32),
-    pub vn: Option<(u32, u32, u32)>,
+    pub vn: (u32, u32, u32),
 }
 
 impl Face {
     #[inline]
-    pub const fn new(v: (u32, u32, u32), vn: Option<(u32, u32, u32)>) -> Self {
+    pub const fn new(v: (u32, u32, u32), vn: (u32, u32, u32)) -> Self {
         Self { v, vn }
     }
 
@@ -34,14 +34,17 @@ impl Face {
     }
 
     #[inline]
-    pub fn get_normals(&self, normals: &[Vec3]) -> Option<(Vec3, Vec3, Vec3)> {
-        self.vn.map(|n| {
-            (
-                normals[n.0 as usize],
-                normals[n.1 as usize],
-                normals[n.2 as usize],
-            )
-        })
+    pub fn get_normals(&self, normals: &[Vec3]) -> (Vec3, Vec3, Vec3) {
+        (
+            normals[self.vn.0 as usize],
+            normals[self.vn.1 as usize],
+            normals[self.vn.2 as usize],
+        )
+    }
+
+    pub fn face_normal(&self, vertices: &[Vec3]) -> Vec3 {
+        let (v0, v1, v2) = self.get_vertices(vertices);
+        (v1 - v0).cross(v2 - v0)
     }
 
     pub fn bounds(&self, vertices: &[Vec3]) -> Aabb {
@@ -121,16 +124,15 @@ impl Face {
 
         let normal = match mesh.shading_mode {
             ShadingMode::Flat => (v1 - v0).cross(v2 - v0),
-            ShadingMode::Phong => match self.get_normals(&mesh.normals) {
-                None => (v1 - v0).cross(v2 - v0),
-                Some((n0, n1, n2)) => {
-                    let beta = u * inv_det;
-                    let gamma = v * inv_det;
-                    let alpha = 1.0 - beta - gamma;
+            ShadingMode::Phong => {
+                let (n0, n1, n2) = self.get_normals(&mesh.normals);
 
-                    alpha * n0 + beta * n1 + gamma * n2
-                }
-            },
+                let beta = u * inv_det;
+                let gamma = v * inv_det;
+                let alpha = 1.0 - beta - gamma;
+
+                alpha * n0 + beta * n1 + gamma * n2
+            }
         }
         .normalize();
 
@@ -207,35 +209,20 @@ impl Face {
 
 /// The shading mode defines the shading of normals. In `Flat` mode, the surface of triangles will
 /// appear flat. In `Phong` however, they will be interpolated to create a smooth looking surface.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ShadingMode {
     Flat,
     Phong,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 #[serde(try_from = "MeshSerde")]
-#[serde(into = "MeshSerde")]
 pub struct Mesh {
     vertices: Vec<Vec3>,
-    #[serde(default)]
     normals: Vec<Vec3>,
     faces: Vec<Face>,
     shading_mode: ShadingMode,
-    #[serde(skip_serializing)]
     bvh: Tree,
-}
-
-impl Clone for Mesh {
-    fn clone(&self) -> Self {
-        Self {
-            vertices: self.vertices.clone(),
-            normals: self.normals.clone(),
-            faces: self.faces.clone(),
-            shading_mode: self.shading_mode,
-            bvh: Default::default(),
-        }
-    }
 }
 
 impl Mesh {
@@ -252,6 +239,35 @@ impl Mesh {
             shading_mode,
             bvh: Default::default(),
         }
+    }
+
+    /// Determines the weights by which to scale triangle (p0, p1, p2)'s normal when
+    /// accumulating the vertex normal for vertices 0, 1, 2.
+    ///
+    /// # Constraints
+    /// * `p0` - All values should be finite (neither infinite nor `NaN`).
+    /// * `p1` - All values should be finite.
+    /// * `p2` - All values should be finite.
+    ///
+    /// # Arguments
+    /// * `p0` - The position 0 of a triangle
+    /// * `p1` - The position 1 of a triangle
+    /// * `p2` - The position 2 of a triangle
+    ///
+    /// # Returns
+    /// * `w0` - The weight for vertex 0
+    /// * `w1` - The weight for vertex 1
+    /// * `w2` - The weight for vertex 2
+    pub fn angle_weights(p0: Vec3, p1: Vec3, p2: Vec3) -> (Float, Float, Float) {
+        let e01 = (p1 - p0).normalize();
+        let e12 = (p2 - p1).normalize();
+        let e20 = (p0 - p2).normalize();
+
+        let w0 = e01.dot(-e20).clamp(-1.0, 1.0);
+        let w1 = e12.dot(-e01).clamp(-1.0, 1.0);
+        let w2 = e20.dot(-e12).clamp(-1.0, 1.0);
+
+        (w0, w1, w2)
     }
 
     pub fn translate(&mut self, translation: Vec3) -> &mut Self {
@@ -287,9 +303,28 @@ impl Mesh {
         self
     }
 
-    pub fn build_tree(&mut self) {
+    pub fn build(mut self) -> Self {
+        if self.shading_mode == ShadingMode::Phong && self.normals.is_empty() {
+            self.normals = vec![Vec3::zero(); self.vertices.len()];
+
+            for face in &self.faces {
+                let (v0, v1, v2) = face.get_vertices(&self.vertices);
+                let normal = face.face_normal(&self.vertices);
+                let (w0, w1, w2) = Self::angle_weights(v0, v1, v2);
+
+                self.normals[face.vn.0 as usize] += w0 * normal;
+                self.normals[face.vn.1 as usize] += w1 * normal;
+                self.normals[face.vn.2 as usize] += w2 * normal;
+            }
+
+            for n in &mut self.normals {
+                *n = n.normalize();
+            }
+        }
+
         let values: Vec<u32> = (0..self.faces.len() as u32).collect();
         self.bvh = Tree::new(&values, |i| self.faces[i as usize].bounds(&self.vertices));
+        self
     }
 }
 
@@ -326,59 +361,75 @@ impl Geometry for Mesh {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-enum MeshSerde {
-    Config(MeshConfig),
-    Mesh(Mesh),
+impl Serialize for Mesh {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        MeshSerde::Checkpoint(MeshCheckpoint {
+            vertices: self.vertices.clone(),
+            normals: self.normals.clone(),
+            faces: self.faces.clone(),
+            shading_mode: self.shading_mode,
+        })
+        .serialize(serializer)
+    }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
-struct MeshConfig {
-    /// The path of the mesh file
-    path: String,
-    /// Optional scaling (1st application)
-    #[serde(default)]
-    scale: Option<Vec3>,
-    #[serde(default)]
-    /// Optional rotation (2nd application)
-    /// - params: (axis, angle)
-    rotation: Option<Rot3>,
-    #[serde(default)]
-    /// Optional translation (3rd application)
-    translation: Option<Vec3>,
-    shading_mode: ShadingMode,
+#[derive(Deserialize, Serialize)]
+enum MeshSerde {
+    Config(MeshConfig),
+    Checkpoint(MeshCheckpoint),
 }
 impl TryFrom<MeshSerde> for Mesh {
     type Error = String;
 
     fn try_from(serde: MeshSerde) -> Result<Self, Self::Error> {
         match serde {
-            MeshSerde::Config(conf) => {
-                let obj = ObjFile::load(&conf.path)?;
-                let mut mesh = Mesh::new(obj.vertices, obj.normals, obj.faces, conf.shading_mode);
+            MeshSerde::Config(c) => {
+                let obj = ObjFile::load(&c.path)?;
+                let mut mesh = Mesh::new(obj.vertices, obj.normals, obj.faces, c.shading_mode);
 
-                if let Some(s) = conf.scale {
+                if let Some(s) = c.scale {
                     mesh.scale(s);
                 }
-                if let Some(r) = conf.rotation {
+                if let Some(r) = c.rotation {
                     mesh.rotate(r);
                 }
-                if let Some(t) = conf.translation {
+                if let Some(t) = c.translation {
                     mesh.translate(t);
                 }
-                mesh.build_tree();
-
-                Ok(mesh)
+                Ok(mesh.build())
             }
-            MeshSerde::Mesh(mut mesh) => {
-                mesh.build_tree();
-                Ok(mesh)
+            MeshSerde::Checkpoint(c) => {
+                let mesh = Mesh::new(c.vertices, c.normals, c.faces, c.shading_mode);
+                Ok(mesh.build())
             }
         }
     }
 }
-impl From<Mesh> for MeshSerde {
-    fn from(mesh: Mesh) -> Self {
-        Self::Mesh(mesh)
-    }
+
+#[derive(Deserialize, Serialize)]
+struct MeshConfig {
+    /// The path of the mesh file
+    path: String,
+    /// Optional scaling (1st application)
+    #[serde(default)]
+    scale: Option<Vec3>,
+    /// Optional rotation (2nd application)
+    /// - params: (axis, angle)
+    #[serde(default)]
+    rotation: Option<Rot3>,
+    /// Optional translation (3rd application)
+    #[serde(default)]
+    translation: Option<Vec3>,
+    shading_mode: ShadingMode,
+}
+
+#[derive(Deserialize, Serialize)]
+struct MeshCheckpoint {
+    vertices: Vec<Vec3>,
+    normals: Vec<Vec3>,
+    faces: Vec<Face>,
+    shading_mode: ShadingMode,
 }
