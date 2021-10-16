@@ -40,7 +40,7 @@ impl RefractiveType {
         match self {
             RefractiveType::Vacuum => 1.0,
             RefractiveType::Linear(min, max) => 0.5 * (min + max),
-            RefractiveType::Air => 1.00028880,
+            RefractiveType::Air => 1.0002888,
             RefractiveType::Diesel => 1.6147,
             RefractiveType::Glass => 1.5183,
             RefractiveType::Sapphire => 1.7525,
