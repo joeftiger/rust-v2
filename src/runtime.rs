@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use signal_hook::consts as signals;
 use std::os::raw::c_int;
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 
 #[derive(Deserialize, Serialize)]
 pub struct Runtime {
@@ -47,13 +49,14 @@ impl Runtime {
 
     pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
         let stop_watcher = Arc::new(AtomicBool::new(false));
-        let stop_watcher = Self::watch(signals::SIGUSR1, stop_watcher);
+        let stop_watcher = Self::watch(signals::SIGUSR2, stop_watcher);
         let stop_watcher = Self::watch(signals::SIGINT, stop_watcher);
+        let save_watcher = Self::watch(signals::SIGUSR1, Arc::new(AtomicBool::new(false)));
 
         let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
         let c = Arc::clone(&stop_watcher);
         let threadpool = Threadpool::new(
-            threads,
+            threads + 1,
             None,
             Some(Box::new(move || c.store(true, Ordering::SeqCst))),
         );
@@ -93,6 +96,23 @@ impl Runtime {
                 }
             })
         }
+        let c = Arc::clone(&stop_watcher);
+        let r = Arc::clone(&self.renderer);
+        let save_image = self.output_path().to_string() + ".png";
+        threadpool.execute(move || loop {
+            if c.load(Ordering::SeqCst) {
+                break;
+            }
+
+            if save_watcher
+                .compare_exchange_weak(true, false, Ordering::Relaxed, Ordering::Relaxed)
+                .is_ok()
+            {
+                r.get_image::<u16>().save(&save_image).unwrap()
+            }
+
+            thread::sleep(Duration::from_secs(1));
+        });
 
         (threadpool, stop_watcher, tp, fp)
     }
