@@ -31,19 +31,19 @@ pub const UNIT_VECTORS: [Vec3; 6] = [
 ];
 
 #[inline]
-fn min2(a: Vec3, b: Vec3) -> Vec3 {
+pub fn min2(a: Vec3, b: Vec3) -> Vec3 {
     Vec3::new(a.x.min(b.x), a.y.min(b.y), a.z.min(b.z))
 }
 #[inline]
-fn min3(a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
+pub fn min3(a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
     min2(min2(a, b), c)
 }
 #[inline]
-fn max2(a: Vec3, b: Vec3) -> Vec3 {
+pub fn max2(a: Vec3, b: Vec3) -> Vec3 {
     Vec3::new(a.x.max(b.x), a.y.max(b.y), a.z.max(b.z))
 }
 #[inline]
-fn max3(a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
+pub fn max3(a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
     max2(max2(a, b), c)
 }
 #[inline]
@@ -55,7 +55,7 @@ pub fn max_val(v: Vec3) -> Float {
     v.x.max(v.y).max(v.z)
 }
 #[inline]
-fn max_index(v: Vec3) -> usize {
+pub fn max_index(v: Vec3) -> usize {
     if v.x > v.y {
         if v.x > v.z {
             return 0;
@@ -67,7 +67,7 @@ fn max_index(v: Vec3) -> usize {
     2
 }
 #[inline]
-fn abs(v: Vec3) -> Vec3 {
+pub fn abs(v: Vec3) -> Vec3 {
     Vec3::new(v.x.abs(), v.y.abs(), v.z.abs())
 }
 
