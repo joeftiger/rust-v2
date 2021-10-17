@@ -3,11 +3,7 @@ use crate::util::threadpool::Threadpool;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::{Deserialize, Serialize};
-use signal_hook::consts as signals;
-use std::os::raw::c_int;
 use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
 
 #[derive(Deserialize, Serialize)]
 pub struct Runtime {
@@ -27,11 +23,6 @@ impl Runtime {
         &self.renderer.config.output
     }
 
-    fn watch(signal: c_int, watcher: Arc<AtomicBool>) -> Arc<AtomicBool> {
-        let _ = signal_hook::flag::register(signal, Arc::clone(&watcher));
-        watcher
-    }
-
     fn create_bars(&self, tiles: usize, passes: usize) -> (ProgressBar, ProgressBar) {
         let tp_template = ProgressStyle::default_bar().template(
             "Render tiles:  {bar:40.cyan/white} {percent}% [{eta_precise} remaining]\n{msg}",
@@ -48,13 +39,11 @@ impl Runtime {
     }
 
     pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
-        let stop_watcher = Arc::new(AtomicBool::new(false));
-        let stop_watcher = Self::watch(signals::SIGUSR2, stop_watcher);
-        let stop_watcher = Self::watch(signals::SIGINT, stop_watcher);
-        let save_watcher = Self::watch(signals::SIGUSR1, Arc::new(AtomicBool::new(false)));
+        log::info!(target: "Runtime", "setting up environment");
+        let cancel = Arc::new(AtomicBool::new(false));
 
         let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
-        let c = Arc::clone(&stop_watcher);
+        let c = Arc::clone(&cancel);
         let threadpool = Threadpool::new(
             threads + 1,
             None,
@@ -64,13 +53,16 @@ impl Runtime {
         let frame_tiles = self.renderer.sensor().num_tiles();
         let total_tiles = frame_tiles * self.renderer.config.passes;
 
-        let (tp, fp) = self.create_bars(total_tiles, self.renderer.config.passes);
         let checkpointed_progress = self.progress.load(Ordering::SeqCst);
+        log::info!(target: "Runtime", "starting/continuing at {}/{} tiles", checkpointed_progress, total_tiles);
+
+        let (tp, fp) = self.create_bars(total_tiles, self.renderer.config.passes);
         tp.inc(checkpointed_progress as u64);
         fp.inc((checkpointed_progress / frame_tiles) as u64);
 
+        log::info!(target: "Runtime", "starting {} threads", threads);
         for _ in 0..threads {
-            let c = Arc::clone(&stop_watcher);
+            let c = Arc::clone(&cancel);
             let r = Arc::clone(&self.renderer);
             let p = Arc::clone(&self.progress);
 
@@ -82,7 +74,7 @@ impl Runtime {
                     break;
                 }
 
-                let tile_index = p.fetch_add(1, Ordering::SeqCst);
+                let tile_index = p.fetch_add(1, Ordering::Relaxed);
                 if tile_index >= total_tiles {
                     break;
                 }
@@ -96,32 +88,15 @@ impl Runtime {
                 }
             })
         }
-        let c = Arc::clone(&stop_watcher);
-        let r = Arc::clone(&self.renderer);
-        let save_image = self.output_path().to_string() + ".png";
-        threadpool.execute(move || loop {
-            if c.load(Ordering::SeqCst) {
-                break;
-            }
 
-            if save_watcher
-                .compare_exchange_weak(true, false, Ordering::Relaxed, Ordering::Relaxed)
-                .is_ok()
-            {
-                r.get_image::<u16>().save(&save_image).unwrap()
-            }
-
-            thread::sleep(Duration::from_secs(1));
-        });
-
-        (threadpool, stop_watcher, tp, fp)
+        log::info!(target: "Runtime", "rendering in progress");
+        (threadpool, cancel, tp, fp)
     }
 
-    #[cfg(feature = "show-image")]
+    /*#[cfg(feature = "show-image")]
     pub fn run_live(
         &self,
     ) -> (
-        Threadpool,
         Threadpool,
         Arc<AtomicBool>,
         ProgressBar,
@@ -129,29 +104,25 @@ impl Runtime {
     ) {
         use show_image::create_window;
 
-        let window = create_window("Rust-V2", Default::default()).unwrap();
+        let (render_pool, cancel, tp, fp) = self.run();
 
-        let (render_pool, cancelled, tp, fp) = self.run();
+        let c = Arc::clone(&cancel);
+        let r = Arc::clone(&self.renderer);
 
-        let c = cancelled.clone();
-        let r = self.renderer.clone();
-        let termination = Arc::new(AtomicBool::new(false));
-        let t = termination.clone();
-        let image_pool = Threadpool::new(
-            1,
-            Some(1),
-            Some(Box::new(move || t.store(true, Ordering::Relaxed))),
-        );
-        let tp_clone = tp.clone();
+        log::info!(target: "Runtime", "creating window");
+        let window = create_window("Rust-V2", Default::default())
+            .map_err(|e| log::error!(target: "Runtime", "unable to create window: {}", e)).unwrap();
         image_pool.execute(move || {
-            while termination.load(Ordering::Relaxed) && c.load(Ordering::Relaxed) {
+            while c.load(Ordering::Relaxed) {
                 if let Err(e) = window.set_image("Rendering", r.get_image::<u8>()) {
-                    tp_clone.set_message(e.to_string());
+                    log::error!(target: "Runtime", "unable to set image in window: {}", e);
                     break;
                 }
+
+                thread::sleep(Duration::from_secs(1));
             }
         });
 
-        (image_pool, render_pool, cancelled, tp, fp)
-    }
+        (render_pool, cancel, tp, fp)
+    }*/
 }

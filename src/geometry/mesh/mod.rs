@@ -1,11 +1,10 @@
 pub mod obj;
 
 use crate::geometry::bvh::Tree;
-use crate::geometry::{abs, max3, max_index, min3, Aabb, Geometry, Intersection, Ray};
+use crate::geometry::{max3, min3, Aabb, Geometry, Intersection, Ray};
 use crate::{Float, Rot3, Vec3};
 use cgmath::{ElementWise, InnerSpace, Rotation, Zero};
 use core::convert::TryFrom;
-use core::mem;
 use obj::ObjFile;
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -52,8 +51,98 @@ impl Face {
         Aabb::new(min3(v0, v1, v2), max3(v0, v1, v2))
     }
 
+    #[cfg(not(feature = "watertight-mesh"))]
+    fn intersect(&self, mesh: &Mesh, ray: Ray) -> Option<Intersection> {
+        use crate::util::floats;
+
+        let (p0, p1, p2) = self.get_vertices(&mesh.vertices);
+
+        let edge1 = p1 - p0;
+        let edge2 = p2 - p0;
+
+        let h = ray.direction.cross(edge2);
+        let a = edge1.dot(h);
+
+        // ray is parallel to triangle
+        if floats::approx_eq(a, 0.0) {
+            return None;
+        }
+
+        let f = 1.0 / a;
+        let s = ray.origin - p0;
+        let beta = f * s.dot(h);
+        #[allow(clippy::manual_range_contains)]
+        if beta < 0.0 || 1.0 < beta {
+            return None;
+        }
+
+        let q = s.cross(edge1);
+        let gamma = f * ray.direction.dot(q);
+        if gamma < 0.0 || 1.0 < beta + gamma {
+            return None;
+        }
+
+        let t = f * edge2.dot(q);
+        if !ray.contains(t) {
+            return None;
+        }
+
+        let point = ray.at(t);
+
+        let normal = match mesh.shading_mode {
+            ShadingMode::Flat => edge1.cross(edge2),
+            ShadingMode::Phong => {
+                let (n0, n1, n2) = self.get_normals(&mesh.normals);
+                let alpha = 1.0 - beta - gamma;
+
+                alpha * n0 + beta * n1 + gamma * n2
+            }
+        }
+        .normalize();
+
+        Some(Intersection::new(point, normal, ray.direction, t))
+    }
+
+    #[cfg(not(feature = "watertight-mesh"))]
+    fn intersects(&self, mesh: &Mesh, ray: Ray) -> bool {
+        use crate::util::floats;
+
+        let (p0, p1, p2) = self.get_vertices(&mesh.vertices);
+
+        let edge1 = p1 - p0;
+        let edge2 = p2 - p0;
+
+        let h = ray.direction.cross(edge2);
+        let a = edge1.dot(h);
+
+        // ray is parallel to triangle
+        if floats::approx_eq(a, 0.0) {
+            return false;
+        }
+
+        let f = 1.0 / a;
+        let s = ray.origin - p0;
+        let beta = f * s.dot(h);
+        #[allow(clippy::manual_range_contains)]
+        if beta < 0.0 || 1.0 < beta {
+            return false;
+        }
+
+        let q = s.cross(edge1);
+        let gamma = f * ray.direction.dot(q);
+        if gamma < 0.0 || 1.0 < beta + gamma {
+            return false;
+        }
+
+        let t = f * edge2.dot(q);
+        ray.contains(t)
+    }
+
+    #[cfg(feature = "watertight-mesh")]
     #[allow(clippy::many_single_char_names)]
     fn intersect(&self, mesh: &Mesh, ray: Ray) -> Option<Intersection> {
+        use crate::geometry::{abs, max_index};
+
         let (v0, v1, v2) = self.get_vertices(&mesh.vertices);
 
         let dir = ray.direction;
@@ -70,7 +159,7 @@ impl Face {
 
         // swap dimension to preserve winding direction of triangles
         if dir[kz] < 0.0 {
-            mem::swap(&mut kx, &mut ky);
+            core::mem::swap(&mut kx, &mut ky);
         }
 
         // calculate shear constants
@@ -139,8 +228,11 @@ impl Face {
         Some(Intersection::new(point, normal, ray.direction, t))
     }
 
+    #[cfg(feature = "watertight-mesh")]
     #[allow(clippy::many_single_char_names)]
     fn intersects(&self, mesh: &Mesh, ray: Ray) -> bool {
+        use crate::geometry::{abs, max_index};
+
         let (v0, v1, v2) = self.get_vertices(&mesh.vertices);
 
         let dir = ray.direction;
@@ -157,7 +249,7 @@ impl Face {
 
         // swap dimension to preserve winding direction of triangles
         if dir[kz] < 0.0 {
-            mem::swap(&mut kx, &mut ky);
+            core::mem::swap(&mut kx, &mut ky);
         }
 
         // calculate shear constants
@@ -305,6 +397,7 @@ impl Mesh {
 
     pub fn build(mut self) -> Self {
         if self.shading_mode == ShadingMode::Phong && self.normals.is_empty() {
+            log::info!(target: "Mesh", "computing normals...");
             self.normals = vec![Vec3::zero(); self.vertices.len()];
 
             for face in &self.faces {
@@ -320,10 +413,13 @@ impl Mesh {
             for n in &mut self.normals {
                 *n = n.normalize();
             }
+            log::info!(target: "Mesh", "computed normals!");
         }
 
+        log::info!(target: "Mesh", "computing BVH (might take a while)...");
         let values: Vec<u32> = (0..self.faces.len() as u32).collect();
         self.bvh = Tree::new(&values, |i| self.faces[i as usize].bounds(&self.vertices));
+        log::info!(target: "Mesh", "computed BVH!");
         self
     }
 }

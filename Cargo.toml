@@ -6,25 +6,27 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0", features = ["derive", "rc"] }
-serde-big-array = "0.3"
-typetag = "0.1"
-ron = "0.6"
-bincode = "1.3"
-lz4_flex = "0.9"
+serde = { version = "1.0.130", features = ["derive", "rc"] }
+serde-big-array = "0.3.2"
+typetag = "0.1.7"
+ron = "0.6.5"
+bincode = "1.3.3"
+lz4_flex = "0.9.0"
 
-fastrand = "1.5"
-bitflags = "1.3"
-image = "0.23"
-cgmath = { version = "0.18", features = ["serde"] }
+fastrand = "1.5.0"
+bitflags = "1.3.2"
+image = "0.23.14"
+cgmath = { version = "0.18.0", features = ["serde"] }
 
-crossbeam-channel = "0.5"
-parking_lot = { version = "0.11", features = ["serde"] }
-num_cpus = "1.13"
-signal-hook = "0.3"
+crossbeam-channel = "0.5.1"
+parking_lot = { version = "0.11.2", features = ["serde"] }
+num_cpus = "1.13.0"
+signal-hook = "0.3.10"
 
-show-image = { version = "0.9", features = ["image", "save"], optional = true }
+show-image = { version = "0.9.3", features = ["image", "save"], optional = true }
 
+log = "0.4.14"
+env_logger = "0.9.0"
 indicatif = "0.17.0-beta.1"
 
 [features]
@@ -33,6 +35,7 @@ spectral = []
 srgb = []
 xyz = []
 f64 = []
+watertight-mesh = ["f64"]
 
 [profile.release]
 codegen-units = 1
