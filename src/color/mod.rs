@@ -50,6 +50,7 @@ macro_rules! color {
 
         use crate::color::*;
         use crate::util::floats;
+        use crate::util::math::Lerp;
 
         #[derive(Clone, Copy, Debug, PartialEq)]
         pub struct $name {

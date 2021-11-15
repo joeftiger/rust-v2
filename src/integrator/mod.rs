@@ -21,10 +21,13 @@ pub mod path;
 pub mod spectral;
 pub mod spectral_single;
 pub mod whitted;
+pub mod hero;
 
 pub use path::*;
 pub use spectral::*;
 pub use whitted::*;
+pub use spectral_single::*;
+pub use hero::*;
 
 use crate::camera::sensor::Pixel;
 use crate::geometry::Ray;

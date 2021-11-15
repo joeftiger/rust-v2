@@ -1,6 +1,30 @@
 use crate::util::floats::EPSILON;
 use crate::Float;
 
+pub trait Lerp {
+    /// Lerps `start` to `end` by `self`.
+    fn lerp(self, start: Self, end: Self) -> Self;
+}
+
+macro_rules! impl_lerp {
+    ($($t:ident),+) => {$(
+        impl Lerp for $t {
+            fn lerp(self, start: Self, end: Self) -> Self {
+                // consistent
+                if start == end {
+                    start
+
+                // exact/monotonic
+                } else {
+                    self.mul_add(end, (-self).mul_add(start, start))
+                }
+            }
+        })+
+    };
+}
+
+impl_lerp!(f32, f64);
+
 /// Solves a quadratic equation, handling generics.
 ///
 /// `a`x^2 + `b`x + `c`

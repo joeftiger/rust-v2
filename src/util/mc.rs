@@ -5,6 +5,7 @@ use cgmath::Zero;
 use core::f32::consts::{FRAC_PI_2, FRAC_PI_4, TAU};
 #[cfg(feature = "f64")]
 use core::f64::consts::{FRAC_PI_2, FRAC_PI_4, TAU};
+use crate::util::math::Lerp;
 
 /// Samples a non-concentric point on the unit disk.
 ///
@@ -99,7 +100,7 @@ pub fn sample_unit_sphere(sample: Vec2) -> Vec3 {
 /// * `Vector3`: A direction in the cone around `(0, 1, 0)`
 #[inline]
 pub fn sample_unit_cone(sample: Vec2, cos_theta_max: Float) -> Vec3 {
-    let cos_theta = cos_theta_max.lerp(1.0, sample.x);
+    let cos_theta = sample.x.lerp(cos_theta_max, 1.0);
     let sin_theta = Float::sqrt(1.0 - cos_theta * cos_theta);
     let (sin_phi, cos_phi) = Float::sin_cos(sample.y * TAU);
 

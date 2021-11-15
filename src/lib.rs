@@ -1,4 +1,3 @@
-#![feature(float_interpolation)]
 #![feature(total_cmp)]
 
 extern crate image;
