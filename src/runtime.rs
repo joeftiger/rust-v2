@@ -38,8 +38,7 @@ impl Runtime {
         (tp, fp)
     }
 
-    pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
-        log::info!(target: "Runtime", "setting up environment");
+    fn create_pool(&self) -> (Threadpool, Arc<AtomicBool>) {
         let cancel = Arc::new(AtomicBool::new(false));
 
         let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
@@ -49,6 +48,13 @@ impl Runtime {
             None,
             Some(Box::new(move || c.store(true, Ordering::SeqCst))),
         );
+
+        (threadpool, cancel)
+    }
+
+    pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
+        log::info!(target: "Runtime", "setting up environment");
+        let (threadpool, cancel) = self.create_pool();
 
         let frame_tiles = self.renderer.sensor().num_tiles();
         let total_tiles = frame_tiles * self.renderer.config.passes;
@@ -91,6 +97,12 @@ impl Runtime {
 
         log::info!(target: "Runtime", "rendering in progress");
         (threadpool, cancel, tp, fp)
+    }
+
+    pub fn done(&self) -> bool {
+        let total_tiles = self.renderer.sensor().num_tiles() * self.renderer.config.passes;
+
+        self.progress.load(Ordering::Relaxed) >= total_tiles
     }
 
     /*#[cfg(feature = "show-image")]
