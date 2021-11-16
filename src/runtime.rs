@@ -28,7 +28,7 @@ impl Runtime {
             "Render tiles:  {bar:40.cyan/white} {percent}% [{eta_precise} remaining]\n{msg}",
         );
         let fp_template = ProgressStyle::default_bar()
-            .template("Render frames: {bar:40.cyan/white} {pos}/{len} {per_sec}");
+            .template("Render frames: {pos}/{len} {per_sec}");
         let bar = MultiProgress::new();
         let tp = bar.add(ProgressBar::new(tiles as u64));
         tp.set_style(tp_template);
@@ -43,8 +43,9 @@ impl Runtime {
 
         let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
         let c = Arc::clone(&cancel);
+        log::info!(target: "Runtime", "creating pool with {} threads", threads);
         let threadpool = Threadpool::new(
-            threads + 1,
+            threads,
             None,
             Some(Box::new(move || c.store(true, Ordering::SeqCst))),
         );
@@ -66,8 +67,8 @@ impl Runtime {
         tp.inc(checkpointed_progress as u64);
         fp.inc((checkpointed_progress / frame_tiles) as u64);
 
-        log::info!(target: "Runtime", "starting {} threads", threads);
-        for _ in 0..threads {
+        log::info!(target: "Runtime", "starting {} render threads", threadpool.workers());
+        for _ in 0..threadpool.workers() {
             let c = Arc::clone(&cancel);
             let r = Arc::clone(&self.renderer);
             let p = Arc::clone(&self.progress);
