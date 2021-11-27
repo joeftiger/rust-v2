@@ -13,7 +13,7 @@ pub struct Renderer {
     pub config: Config,
     pub camera: Box<dyn Camera>,
     // TODO: remove pub
-    pub sensor: Sensor,
+    sensor: Sensor,
     pub integrator: Box<dyn Integrator>,
     #[serde(default)]
     pub scene: Scene,

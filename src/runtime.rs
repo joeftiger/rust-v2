@@ -38,7 +38,7 @@ impl Runtime {
         (tp, fp)
     }
 
-    fn create_pool(&self) -> (Threadpool, Arc<AtomicBool>) {
+    pub fn create_pool(&self) -> (Threadpool, Arc<AtomicBool>) {
         let cancel = Arc::new(AtomicBool::new(false));
 
         let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
@@ -51,6 +51,33 @@ impl Runtime {
         );
 
         (threadpool, cancel)
+    }
+
+    pub fn run_pool(&self, threadpool: &Threadpool, cancel: Arc<AtomicBool>, frames: usize) {
+        let frame_tiles = self.renderer.sensor().num_tiles();
+
+        let total_tiles = frame_tiles * frames;
+        let progress = Arc::new(AtomicUsize::new(0));
+
+        for _ in 0..threadpool.workers() {
+            let c = Arc::clone(&cancel);
+            let r = Arc::clone(&self.renderer);
+            let p = Arc::clone(&progress);
+
+            threadpool.execute(move || loop {
+                if c.load(Ordering::SeqCst) {
+                    break;
+                }
+
+                let tile_index = p.fetch_add(1, Ordering::Relaxed);
+                if tile_index >= total_tiles {
+                    break;
+                }
+
+                let index = tile_index % frame_tiles;
+                r.integrate(index);
+            })
+        }
     }
 
     pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {

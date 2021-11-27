@@ -1,6 +1,6 @@
 Config (
     config: (
-        output: "cornell",
+        output: "glass",
         passes: 16384,
         threads: None,
     ),
@@ -13,16 +13,16 @@ Config (
                 z: 4,
             ),
             target: (
-                x: 0,
-                y: 0,
-                z: 0,
+                x: 0.5,
+                y: -0.5,
+                z: 0.5,
             ),
             up: (
                 x: 0,
                 y: 1,
                 z: 0,
             ),
-            fov: 70,
+            fov: 17,
             resolution: (
                 x: 256,
                 y: 256,
@@ -31,9 +31,9 @@ Config (
     },
     integrator: {
         "SpectralPath": (
-            max_depth: 32,
-            sampler: Random,
+            max_depth: 8,
             spectral_sampler: Hero,
+            sampler: Random,
             direct_illum: All,
         ),
     },
@@ -175,13 +175,52 @@ Config (
                     ],
                 ),
             )),
+            Receiver((
+                geometry: {
+                    /*"Bubble": (
+                    	inner: (
+	                    center: (
+	                        x: 0.5,
+	                        y: -0.5,
+	                        z: 0.5,
+	                    ),
+	                    radius: 0.4,
+                    	),
+                    	outer: (
+	                    center: (
+	                        x: 0.5,
+	                        y: -0.5,
+	                        z: 0.5,
+	                    ),
+	                    radius: 0.5,
+                    	),
+                    ),*/
+                    "Sphere": (
+                        center: (
+                            x: 0.5,
+                            y: -0.5,
+                            z: 0.5,
+                        ),
+                        radius: 0.5,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "FresnelSpecular": (
+                                r: Color(White),
+                                t: Color(White),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Sapphire,
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+            )),
             Emitter((
                 geometry: {
-                    // "Point": ((
-                    //     x: -0.5,
-                    //     y: 0.5,
-                    //     z: -0.5,
-                    // )),
                     "Sphere": (
                         center: (
                             x: -0.5,

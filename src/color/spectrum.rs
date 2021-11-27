@@ -1,8 +1,8 @@
-use crate::color::cie::{lambda_to_xyz_approx, CIE_Y_INTEGRAL};
-use crate::color::color_data::LAMBDA_RANGE;
+use crate::color::cie::{CIE_Y_INTEGRAL, lambda_to_xyz_approx};
 use crate::color::{ColorSerde, Srgb};
 use crate::Float;
 use core::convert::TryFrom;
+use crate::color::color_data::LAMBDA_RANGE;
 
 crate::color!(
     Spectrum => Float, LAMBDA_NUM, crate::color::color_data::spectral
@@ -32,15 +32,14 @@ impl From<Spectrum> for Srgb {
 
 impl From<Spectrum> for Xyz {
     fn from(spectrum: Spectrum) -> Self {
-        let xyz = spectrum
+        let xyz: Xyz = spectrum
             .as_light_waves()
             .iter()
-            .fold(Xyz::splat(0.0), |acc, next| {
-                acc + lambda_to_xyz_approx(next.lambda) * next.intensity
-            });
+            .map(|l| lambda_to_xyz_approx(l.lambda) * l.intensity)
+            .sum();
 
-        let scale = LAMBDA_RANGE / (CIE_Y_INTEGRAL * Spectrum::size() as Float);
+        const SCALE: Float = LAMBDA_RANGE / (CIE_Y_INTEGRAL * Spectrum::size() as Float);
 
-        xyz * scale
+        xyz * SCALE
     }
 }

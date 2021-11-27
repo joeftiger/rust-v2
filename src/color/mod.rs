@@ -126,6 +126,11 @@ macro_rules! color {
                 $size
             }
 
+            /// Returns the sum of all values.
+            pub fn sum_values(&self) -> $t {
+                self.data.iter().sum()
+            }
+
             /// Returns whether this color is black (all values `0`).
             ///
             /// # Example

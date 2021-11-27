@@ -179,10 +179,10 @@ impl Stats {
     pub fn calculate(&mut self, batch_size: usize, runtime: Runtime) -> Vec<f64> {
         let mut error = Vec::new();
 
-        let (pool, _) = runtime.create_pool();
+        let (pool, cancel) = runtime.create_pool();
 
         while !runtime.done() {
-            runtime.run_pool(&pool, batch_size);
+            runtime.run_pool(&pool, cancel.clone(), batch_size);
 
             let actual: Vec<Rgb16> = runtime.renderer.get_image().pixels().copied().collect();
             error.push(self.error_method.calculate(&self.target, &actual));
