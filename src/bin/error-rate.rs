@@ -10,10 +10,10 @@ pub type Rgb16Image = ImageBuffer<Rgb16, Vec<u16>>;
 
 static HELP: &str = r#"
 USAGE:
-    rust-v-stats <error_calc> <log_scale> <nth_pass> <target_image> <scenes>
+    error-rate <error_calc> <log_scale> <nth_pass> <target_image> <scenes>
 
 EXAMPLE:
-    rust-v-stats MSE true 5 cornell.png hero.ron random.ron high-depth.ron
+    error-rate MSE true 5 cornell.png hero.ron random.ron high-depth.ron
 
 ARGUMENTS:
     error_calc      {MAE, MBE, MSE, RMSE}   the algorithm to calculate the error

@@ -1,9 +1,11 @@
 use crate::renderer::Renderer;
 use crate::util::threadpool::Threadpool;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::fs;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use lz4_flex::decompress_size_prepended;
 
 #[derive(Deserialize, Serialize)]
 pub struct Runtime {
@@ -17,6 +19,61 @@ impl Runtime {
             renderer: Arc::new(renderer),
             progress: Arc::new(AtomicUsize::new(0)),
         }
+    }
+
+    /// Loads either a RON or checkpointed [Runtime] from the given path.
+    pub fn load(path: &str) -> Option<Self> {
+        match path.rsplit_once('.') {
+            None => {
+                log::warn!(target: "Loading Runtime", "Unknown file type, trying best-effort");
+                Self::load_ron(path).or_else(|| Self::load_checkpoint(path))
+            }
+            Some((_, ".ron")) => Self::load_ron(path),
+            Some((_, ".bin")) => Self::load_checkpoint(path),
+            Some((_, ending)) => {
+                log::warn!(target: "Loading Runtime", "Unknown file ending: {}, trying best-effort", ending);
+                Self::load_ron(path).or_else(|| Self::load_checkpoint(path))
+            }
+        }
+    }
+
+    /// Loads a RON [Runtime] from the given path.
+    pub fn load_ron(path: &str) -> Option<Self> {
+        log::info!(target: "Loading Runtime", "Trying to load RON...");
+
+        match fs::read_to_string(path) {
+            Ok(ser) => match ron::from_str::<Renderer>(&ser) {
+                Ok(r) => return Some(Self::new(r)),
+                Err(e) => log::error!(target: "Loading Runtime", "unable to deserialize RON: {}", e),
+            },
+            Err(e) => log::error!(target: "Loading Runtime", "unable to read RON: {}", e),
+        }
+
+        None
+    }
+
+    /// Loads a checkpointed [Runtime] from the given path.
+    /// The checkpoint may either be compressed (LZ4) or uncompressed.
+    pub fn load_checkpoint(path: &str) -> Option<Self> {
+        log::info!(target: "Loading Runtime", "Trying to load checkpoint...");
+
+        match fs::read_to_string(path) {
+            Ok(ser) => {
+                let binary = match decompress_size_prepended(ser.as_bytes()) {
+                    Ok(b) => b,
+                    Err(_) => ser.into_bytes(),
+                };
+
+                match bincode::deserialize(&binary) {
+                    Ok(r) => return Some(Self::new(r)),
+                    Err(e) => log::error!(target: "Loading Runtime", "unable to deserialize checkpoint: {}", e),
+                }
+            }
+
+            Err(e) => log::error!(target: "Loading Runtime", "unable to read checkpoint: {}", e),
+        }
+
+        None
     }
 
     pub fn output_path(&self) -> &str {
@@ -57,20 +114,20 @@ impl Runtime {
         let frame_tiles = self.renderer.sensor().num_tiles();
 
         let total_tiles = frame_tiles * frames;
-        let progress = Arc::new(AtomicUsize::new(0));
+        let current_progress = self.progress.load(Ordering::SeqCst);
 
         for _ in 0..threadpool.workers() {
             let c = Arc::clone(&cancel);
             let r = Arc::clone(&self.renderer);
-            let p = Arc::clone(&progress);
+            let p = Arc::clone(&self.progress);
 
             threadpool.execute(move || loop {
                 if c.load(Ordering::SeqCst) {
                     break;
                 }
 
-                let tile_index = p.fetch_add(1, Ordering::Relaxed);
-                if tile_index >= total_tiles {
+                let tile_index = p.fetch_add(1, Ordering::SeqCst);
+                if tile_index >=current_progress + frames || tile_index >= total_tiles {
                     break;
                 }
 

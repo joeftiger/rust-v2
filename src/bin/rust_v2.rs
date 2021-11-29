@@ -22,7 +22,7 @@ fn main() {
 
 fn run() {
     let scene_path = args().nth(1).unwrap();
-    let runtime = Arc::new(deserialize_runtime(&scene_path));
+    let runtime = Arc::new(Runtime::load(&scene_path).unwrap());
 
     // #[cfg(not(feature = "show-image"))]
     let (render_pool, cancel, tp, fp) = runtime.run();
@@ -104,30 +104,6 @@ fn watch_save_checkpoint_signal(cancel: Arc<AtomicBool>, runtime: Arc<Runtime>) 
         Err(e) => {
             log::warn!(target: "Runtime", "unable to register SIGUSR2 for checkpointing: {}", e);
         }
-    }
-}
-
-fn deserialize_runtime(path: &str) -> Runtime {
-    if path.ends_with(".bin") {
-        log::info!(target: "Runtime", "loading checkpoint: {}", path);
-        let ser = fs::read(path)
-            .map_err(|e| log::error!(target: "Runtime", "unable to load checkpoint: {}", e))
-            .unwrap();
-        let binary = decompress_size_prepended(&ser)
-            .map_err(|e| log::error!(target: "Runtime", "unable to decompress checkpoint: {}", e))
-            .unwrap();
-        bincode::deserialize(&binary)
-            .map_err(|e| log::error!(target: "Runtime", "unable to deserialize checkpoint: {}", e))
-            .unwrap()
-    } else {
-        log::info!(target: "Runtime", "loading config: {}", path);
-        let ser = fs::read_to_string(path)
-            .map_err(|e| log::error!(target: "Runtime", "unable to load checkpoint: {}", e))
-            .unwrap();
-        let renderer = ron::from_str(&ser)
-            .map_err(|e| log::error!(target: "Runtime", "unable to deserialize checkpoint: {}", e))
-            .unwrap();
-        Runtime::new(renderer)
     }
 }
 
