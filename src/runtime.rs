@@ -1,11 +1,11 @@
 use crate::renderer::Renderer;
 use crate::util::threadpool::Threadpool;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::fs;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use lz4_flex::decompress_size_prepended;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::sync::Arc;
 
 #[derive(Deserialize, Serialize)]
 pub struct Runtime {
@@ -44,7 +44,9 @@ impl Runtime {
         match fs::read_to_string(path) {
             Ok(ser) => match ron::from_str::<Renderer>(&ser) {
                 Ok(r) => return Some(Self::new(r)),
-                Err(e) => log::error!(target: "Loading Runtime", "unable to deserialize RON: {}", e),
+                Err(e) => {
+                    log::error!(target: "Loading Runtime", "unable to deserialize RON: {}", e)
+                }
             },
             Err(e) => log::error!(target: "Loading Runtime", "unable to read RON: {}", e),
         }
@@ -66,7 +68,9 @@ impl Runtime {
 
                 match bincode::deserialize(&binary) {
                     Ok(r) => return Some(Self::new(r)),
-                    Err(e) => log::error!(target: "Loading Runtime", "unable to deserialize checkpoint: {}", e),
+                    Err(e) => {
+                        log::error!(target: "Loading Runtime", "unable to deserialize checkpoint: {}", e)
+                    }
                 }
             }
 
@@ -84,8 +88,8 @@ impl Runtime {
         let tp_template = ProgressStyle::default_bar().template(
             "Render tiles:  {bar:40.cyan/white} {percent}% [{eta_precise} remaining]\n{msg}",
         );
-        let fp_template = ProgressStyle::default_bar()
-            .template("Render frames: {pos}/{len} {per_sec}");
+        let fp_template =
+            ProgressStyle::default_bar().template("Render frames: {pos}/{len} {per_sec}");
         let bar = MultiProgress::new();
         let tp = bar.add(ProgressBar::new(tiles as u64));
         tp.set_style(tp_template);
@@ -127,7 +131,7 @@ impl Runtime {
                 }
 
                 let tile_index = p.fetch_add(1, Ordering::SeqCst);
-                if tile_index >=current_progress + frames || tile_index >= total_tiles {
+                if tile_index >= current_progress + frames || tile_index >= total_tiles {
                     break;
                 }
 

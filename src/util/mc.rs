@@ -1,11 +1,11 @@
 use crate::geometry::spherical_to_cartesian_trig;
+use crate::util::math::Lerp;
 use crate::{Float, Vec2, Vec3};
 use cgmath::Zero;
 #[cfg(not(feature = "f64"))]
 use core::f32::consts::{FRAC_PI_2, FRAC_PI_4, TAU};
 #[cfg(feature = "f64")]
 use core::f64::consts::{FRAC_PI_2, FRAC_PI_4, TAU};
-use crate::util::math::Lerp;
 
 /// Samples a non-concentric point on the unit disk.
 ///
