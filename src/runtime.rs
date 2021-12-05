@@ -1,50 +1,186 @@
 use crate::renderer::Renderer;
 use crate::util::threadpool::Threadpool;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::fs;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use serde::{Deserialize, Serialize};
+use signal_hook::consts as signals;
+use std::path::Path;
 use std::sync::Arc;
-use lz4_flex::decompress_size_prepended;
+use std::time::{Duration, Instant};
+use std::{fs, thread};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone)]
 pub struct Runtime {
     pub renderer: Arc<Renderer>,
-    pub progress: Arc<AtomicUsize>,
+    pub tile_progress: Arc<AtomicUsize>,
+    pub tiles: usize,
+    pub total_tiles: usize,
+    pub passes: usize,
+    pub cancel: Arc<AtomicBool>,
+    threadpool: Arc<Threadpool>,
 }
 
 impl Runtime {
-    pub fn new(renderer: Renderer) -> Self {
-        Self {
-            renderer: Arc::new(renderer),
-            progress: Arc::new(AtomicUsize::new(0)),
+    #[cold]
+    pub fn new(renderer: Arc<Renderer>, tile_progress: Option<Arc<AtomicUsize>>) -> Self {
+        let tile_progress = tile_progress.unwrap_or_else(|| Arc::new(AtomicUsize::new(0)));
+        let tiles = renderer.sensor().num_tiles();
+        let passes = renderer.config.passes;
+        let total_tiles = tiles * passes;
+        let cancel = Arc::new(AtomicBool::new(false));
+        let threads = renderer.config.threads.unwrap_or_else(num_cpus::get);
+        let c = cancel.clone();
+        let threadpool = Arc::new(Threadpool::new(
+            threads,
+            None,
+            Some(Box::new(move || c.store(true, Ordering::Relaxed))),
+        ));
+
+        log::info!(target: "Runtime", "Creating runtime with {} threads", threads);
+        let runtime = Self {
+            renderer,
+            tile_progress,
+            tiles,
+            total_tiles,
+            passes,
+            cancel,
+            threadpool,
+        };
+        runtime.init();
+        runtime
+    }
+
+    fn init(&self) {
+        self.progress_printer();
+        self.cancel_signal();
+        self.save_signal();
+        self.checkpoint_signal();
+    }
+
+    fn progress_printer(&self) {
+        let cancel = self.cancel.clone();
+        let tile_progress = self.tile_progress.clone();
+        let tiles = self.tiles;
+        let passes = self.passes;
+
+        thread::spawn(move || {
+            let start = Instant::now();
+            let mut counter = 0;
+
+            while !cancel.load(Ordering::Relaxed) {
+                let progress = tile_progress.load(Ordering::SeqCst);
+
+                let pass = progress / tiles;
+                let speed = pass as f64 / start.elapsed().as_secs_f64();
+                let remaining_passes = passes - pass;
+                let remaining = Duration::from_secs((remaining_passes as f64 / speed) as u64);
+
+                let to_print = format!(
+                    "{}/{}  {:.1}/s  {}m remaining",
+                    pass,
+                    passes,
+                    speed,
+                    remaining.as_secs() / 60
+                );
+                if counter % 10 == 0 {
+                    log::info!(target: "Render passes", "{}", to_print);
+                } else {
+                    log::trace!(target: "Render passes", "{}", to_print);
+                }
+                counter += 1;
+
+                thread::sleep(Duration::from_secs(5));
+            }
+        });
+    }
+
+    fn cancel_signal(&self) {
+        if let Err(e) = signal_hook::flag::register(signals::SIGINT, self.cancel.clone()) {
+            log::warn!(target: "Runtime", "unable to create signal watcher for SIGINT: {}", e);
+        }
+        if let Err(e) = signal_hook::flag::register(signals::SIGTERM, self.cancel.clone()) {
+            log::warn!(target: "Runtime", "unable to create signal watcher for SIGTERM: {}", e);
+        }
+    }
+
+    fn save_signal(&self) {
+        let save_flag = Arc::new(AtomicBool::new(false));
+
+        if let Err(e) = signal_hook::flag::register(signals::SIGUSR1, save_flag.clone()) {
+            log::warn!(target: "Runtime", "unable to register SIGUSR1 for saving rendering: {}", e);
+        } else {
+            let cancel = self.cancel.clone();
+            let r = self.renderer.clone();
+
+            thread::spawn(move || {
+                while !cancel.load(Ordering::Relaxed) {
+                    if save_flag.fetch_and(false, Ordering::Relaxed) {
+                        log::info!(target: "Runtime", "saving image...");
+                        r.save_image();
+                        log::info!(target: "Runtime", "saved image!");
+                    }
+
+                    thread::sleep(Duration::from_secs(1));
+                }
+            });
+            log::info!(target: "Runtime", "registered SIGUSR1 for saving rendering");
+        }
+    }
+
+    fn checkpoint_signal(&self) {
+        let checkpoint_flag = Arc::new(AtomicBool::new(false));
+
+        if let Err(e) = signal_hook::flag::register(signals::SIGUSR1, checkpoint_flag.clone()) {
+            log::warn!(target: "Runtime", "unable to register SIGUSR2 for saving rendering: {}", e);
+        } else {
+            let cancel = self.cancel.clone();
+            let serde = RuntimeSerde {
+                tile_progress: self.tile_progress.clone(),
+                renderer: self.renderer.clone(),
+            };
+            let path = format!("{}.bin", &self.renderer.config.output);
+
+            thread::spawn(move || {
+                while !cancel.load(Ordering::Relaxed) {
+                    if checkpoint_flag.fetch_and(false, Ordering::Relaxed) {
+                        serde.save_to(&path);
+                    }
+
+                    thread::sleep(Duration::from_secs(1));
+                }
+            });
+            log::info!(target: "Runtime", "registered SIGUSR2 for saving rendering");
         }
     }
 
     /// Loads either a RON or checkpointed [Runtime] from the given path.
+    #[cold]
     pub fn load(path: &str) -> Option<Self> {
         match path.rsplit_once('.') {
-            None => {
-                log::warn!(target: "Loading Runtime", "Unknown file type, trying best-effort");
-                Self::load_ron(path).or_else(|| Self::load_checkpoint(path))
-            }
-            Some((_, ".ron")) => Self::load_ron(path),
-            Some((_, ".bin")) => Self::load_checkpoint(path),
+            Some((_, "ron")) => Self::load_ron(path),
+            Some((_, "bin")) => Self::load_checkpoint(path),
             Some((_, ending)) => {
                 log::warn!(target: "Loading Runtime", "Unknown file ending: {}, trying best-effort", ending);
+                Self::load_ron(path).or_else(|| Self::load_checkpoint(path))
+            }
+            None => {
+                log::warn!(target: "Loading Runtime", "Unknown file type, trying best-effort");
                 Self::load_ron(path).or_else(|| Self::load_checkpoint(path))
             }
         }
     }
 
     /// Loads a RON [Runtime] from the given path.
+    #[cold]
     pub fn load_ron(path: &str) -> Option<Self> {
         log::info!(target: "Loading Runtime", "Trying to load RON...");
 
         match fs::read_to_string(path) {
             Ok(ser) => match ron::from_str::<Renderer>(&ser) {
-                Ok(r) => return Some(Self::new(r)),
-                Err(e) => log::error!(target: "Loading Runtime", "unable to deserialize RON: {}", e),
+                Ok(r) => return Some(Self::new(Arc::new(r), None)),
+                Err(e) => {
+                    log::error!(target: "Loading Runtime", "unable to deserialize RON: {}", e)
+                }
             },
             Err(e) => log::error!(target: "Loading Runtime", "unable to read RON: {}", e),
         }
@@ -54,172 +190,132 @@ impl Runtime {
 
     /// Loads a checkpointed [Runtime] from the given path.
     /// The checkpoint may either be compressed (LZ4) or uncompressed.
+    #[cold]
     pub fn load_checkpoint(path: &str) -> Option<Self> {
         log::info!(target: "Loading Runtime", "Trying to load checkpoint...");
 
-        match fs::read_to_string(path) {
-            Ok(ser) => {
-                let binary = match decompress_size_prepended(ser.as_bytes()) {
-                    Ok(b) => b,
-                    Err(_) => ser.into_bytes(),
-                };
-
-                match bincode::deserialize(&binary) {
-                    Ok(r) => return Some(Self::new(r)),
-                    Err(e) => log::error!(target: "Loading Runtime", "unable to deserialize checkpoint: {}", e),
-                }
-            }
-
+        match fs::read(path) {
+            Ok(ser) => return Some(Self::deserialize_checkpoint(&ser)),
             Err(e) => log::error!(target: "Loading Runtime", "unable to read checkpoint: {}", e),
         }
 
         None
     }
 
-    pub fn output_path(&self) -> &str {
-        &self.renderer.config.output
-    }
+    pub fn run_frames(&self, frames: usize) {
+        let progress = self.tile_progress.load(Ordering::SeqCst);
+        let num_jobs = (frames * self.tiles).min(self.total_tiles - progress);
 
-    fn create_bars(&self, tiles: usize, passes: usize) -> (ProgressBar, ProgressBar) {
-        let tp_template = ProgressStyle::default_bar().template(
-            "Render tiles:  {bar:40.cyan/white} {percent}% [{eta_precise} remaining]\n{msg}",
-        );
-        let fp_template = ProgressStyle::default_bar()
-            .template("Render frames: {pos}/{len} {per_sec}");
-        let bar = MultiProgress::new();
-        let tp = bar.add(ProgressBar::new(tiles as u64));
-        tp.set_style(tp_template);
-        let fp = bar.add(ProgressBar::new(passes as u64));
-        fp.set_style(fp_template);
-
-        (tp, fp)
-    }
-
-    pub fn create_pool(&self) -> (Threadpool, Arc<AtomicBool>) {
-        let cancel = Arc::new(AtomicBool::new(false));
-
-        let threads = self.renderer.config.threads.unwrap_or_else(num_cpus::get);
-        let c = Arc::clone(&cancel);
-        log::info!(target: "Runtime", "creating pool with {} threads", threads);
-        let threadpool = Threadpool::new(
-            threads,
-            None,
-            Some(Box::new(move || c.store(true, Ordering::SeqCst))),
-        );
-
-        (threadpool, cancel)
-    }
-
-    pub fn run_pool(&self, threadpool: &Threadpool, cancel: Arc<AtomicBool>, frames: usize) {
-        let frame_tiles = self.renderer.sensor().num_tiles();
-
-        let total_tiles = frame_tiles * frames;
-        let current_progress = self.progress.load(Ordering::SeqCst);
-
-        for _ in 0..threadpool.workers() {
-            let c = Arc::clone(&cancel);
+        let tiles = self.tiles;
+        for i in 0..num_jobs {
             let r = Arc::clone(&self.renderer);
-            let p = Arc::clone(&self.progress);
+            self.threadpool.execute(move || {
+                let index = (progress + i) % tiles;
+                r.integrate(index);
+            })
+        }
+    }
 
-            threadpool.execute(move || loop {
-                if c.load(Ordering::SeqCst) {
+    pub fn run(&self) {
+        for _ in 0..self.threadpool.workers() {
+            let c = self.cancel.clone();
+            let r = self.renderer.clone();
+            let p = self.tile_progress.clone();
+
+            let total_tiles = self.total_tiles;
+            let tiles = self.tiles;
+            self.threadpool.execute(move || loop {
+                if c.load(Ordering::Relaxed) {
                     break;
                 }
 
                 let tile_index = p.fetch_add(1, Ordering::SeqCst);
-                if tile_index >=current_progress + frames || tile_index >= total_tiles {
-                    break;
-                }
-
-                let index = tile_index % frame_tiles;
-                r.integrate(index);
-            })
-        }
-    }
-
-    pub fn run(&self) -> (Threadpool, Arc<AtomicBool>, ProgressBar, ProgressBar) {
-        log::info!(target: "Runtime", "setting up environment");
-        let (threadpool, cancel) = self.create_pool();
-
-        let frame_tiles = self.renderer.sensor().num_tiles();
-        let total_tiles = frame_tiles * self.renderer.config.passes;
-
-        let checkpointed_progress = self.progress.load(Ordering::SeqCst);
-        log::info!(target: "Runtime", "starting/continuing at {}/{} tiles", checkpointed_progress, total_tiles);
-
-        let (tp, fp) = self.create_bars(total_tiles, self.renderer.config.passes);
-        tp.inc(checkpointed_progress as u64);
-        fp.inc((checkpointed_progress / frame_tiles) as u64);
-
-        log::info!(target: "Runtime", "starting {} render threads", threadpool.workers());
-        for _ in 0..threadpool.workers() {
-            let c = Arc::clone(&cancel);
-            let r = Arc::clone(&self.renderer);
-            let p = Arc::clone(&self.progress);
-
-            let tp = tp.clone();
-            let fp = fp.clone();
-
-            threadpool.execute(move || loop {
-                if c.load(Ordering::SeqCst) {
-                    break;
-                }
-
-                let tile_index = p.fetch_add(1, Ordering::Relaxed);
                 if tile_index >= total_tiles {
                     break;
                 }
 
-                let index = tile_index % frame_tiles;
+                let index = tile_index % tiles;
                 r.integrate(index);
-
-                tp.inc(1);
-                if index == frame_tiles - 1 {
-                    fp.inc(1);
-                }
             })
         }
-
-        log::info!(target: "Runtime", "rendering in progress");
-        (threadpool, cancel, tp, fp)
     }
 
     pub fn done(&self) -> bool {
-        let total_tiles = self.renderer.sensor().num_tiles() * self.renderer.config.passes;
-
-        self.progress.load(Ordering::Relaxed) >= total_tiles
+        self.tile_progress.load(Ordering::Relaxed) >= self.total_tiles
     }
 
-    /*#[cfg(feature = "show-image")]
-    pub fn run_live(
-        &self,
-    ) -> (
-        Threadpool,
-        Arc<AtomicBool>,
-        ProgressBar,
-        ProgressBar,
-    ) {
-        use show_image::create_window;
+    pub fn join_threadpool(&self) {
+        self.threadpool.join();
+    }
 
-        let (render_pool, cancel, tp, fp) = self.run();
+    pub fn save(&self) {
+        let path = format!("{}.bin", &self.renderer.config.output);
+        RuntimeSerde::from(self).save_to(path);
+    }
 
-        let c = Arc::clone(&cancel);
-        let r = Arc::clone(&self.renderer);
+    #[cold]
+    pub fn deserialize_checkpoint(bytes: &[u8]) -> Self {
+        let binary = decompress_size_prepended(bytes)
+            .map_err(|e| log::error!(target: "Runtime", "unable to decompress checkpoint: {}", e))
+            .unwrap();
+        bincode::deserialize::<RuntimeSerde>(&binary)
+            .map_err(|e| log::error!(target: "Runtime", "unable to deserialize checkpoint: {}", e))
+            .unwrap()
+            .into()
+    }
 
-        log::info!(target: "Runtime", "creating window");
-        let window = create_window("Rust-V2", Default::default())
-            .map_err(|e| log::error!(target: "Runtime", "unable to create window: {}", e)).unwrap();
-        image_pool.execute(move || {
-            while c.load(Ordering::Relaxed) {
-                if let Err(e) = window.set_image("Rendering", r.get_image::<u8>()) {
-                    log::error!(target: "Runtime", "unable to set image in window: {}", e);
-                    break;
-                }
+    #[cold]
+    pub fn serialize_checkpoint(&self) -> Vec<u8> {
+        let binary = bincode::serialize(&RuntimeSerde::from(self))
+            .map_err(|e| log::error!(target: "Runtime", "unable to serialize checkpoint: {}", e))
+            .unwrap();
+        compress_prepend_size(&binary)
+    }
+}
 
-                thread::sleep(Duration::from_secs(1));
-            }
-        });
+#[derive(Deserialize, Serialize)]
+pub struct RuntimeSerde {
+    renderer: Arc<Renderer>,
+    tile_progress: Arc<AtomicUsize>,
+}
 
-        (render_pool, cancel, tp, fp)
-    }*/
+impl RuntimeSerde {
+    pub fn save_to<P: AsRef<Path>>(&self, path: P) {
+        log::info!(target: "Runtime", "saving checkpoint...");
+        let binary = bincode::serialize(self)
+            .map_err(|e| log::error!(target: "Runtime", "unable to serialize checkpoint: {}", e))
+            .unwrap();
+        let compressed = compress_prepend_size(&binary);
+
+        fs::write(path, compressed)
+            .map_err(
+                |e| log::error!(target: "Runtime", "unable to write checkpoint to file: {}", e),
+            )
+            .unwrap();
+        log::info!(target: "Runtime", "saved checkpoint!");
+    }
+}
+
+impl From<RuntimeSerde> for Runtime {
+    fn from(r: RuntimeSerde) -> Self {
+        Self::new(r.renderer, Some(r.tile_progress))
+    }
+}
+
+impl From<Runtime> for RuntimeSerde {
+    fn from(r: Runtime) -> Self {
+        Self {
+            renderer: r.renderer,
+            tile_progress: r.tile_progress,
+        }
+    }
+}
+
+impl From<&Runtime> for RuntimeSerde {
+    fn from(r: &Runtime) -> Self {
+        Self {
+            tile_progress: r.tile_progress.clone(),
+            renderer: r.renderer.clone(),
+        }
+    }
 }

@@ -182,7 +182,7 @@ impl Stats {
         let (pool, cancel) = runtime.create_pool();
 
         while !runtime.done() {
-            runtime.run_pool(&pool, cancel.clone(), batch_size);
+            runtime.run_frames(&pool, cancel.clone(), batch_size);
 
             let actual: Vec<Rgb16> = runtime.renderer.get_image().pixels().copied().collect();
             error.push(self.error_method.calculate(&self.target, &actual));

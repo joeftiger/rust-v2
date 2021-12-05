@@ -6,9 +6,9 @@ pub mod water;
 
 use crate::color::color_data::{LAMBDA_END, LAMBDA_START};
 use crate::util::floats;
+use crate::util::math::Lerp;
 use crate::Float;
 use serde::{Deserialize, Serialize};
-use crate::util::math::Lerp;
 
 ///! In optics, the **refractive index** of a material is a dimensionless number that describes
 ///! how fast light travels through the material.

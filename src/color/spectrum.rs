@@ -1,8 +1,8 @@
-use crate::color::cie::{CIE_Y_INTEGRAL, lambda_to_xyz_approx};
+use crate::color::cie::{lambda_to_xyz_approx, CIE_Y_INTEGRAL};
+use crate::color::color_data::LAMBDA_RANGE;
 use crate::color::{ColorSerde, Srgb};
 use crate::Float;
 use core::convert::TryFrom;
-use crate::color::color_data::LAMBDA_RANGE;
 
 crate::color!(
     Spectrum => Float, LAMBDA_NUM, crate::color::color_data::spectral

@@ -65,6 +65,18 @@ impl Renderer {
 
         buffer
     }
+
+    pub fn save_image(&self) {
+        log::info!(target: "Renderer", "saving image...");
+        let image = self.get_image::<u16>();
+
+        let path = format!("{}.png", &self.config.output);
+
+        match image.save(path) {
+            Ok(_) => log::info!(target: "Renderer", "saved image!"),
+            Err(e) => log::error!(target: "Renderer", "unable to save image: {}", e),
+        }
+    }
 }
 
 /*impl<'de> Deserialize<'de> for Renderer {

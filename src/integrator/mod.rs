@@ -17,17 +17,17 @@
 //! * **Goral** radiosity: `ED*L`
 
 pub mod dummy;
+pub mod hero;
 pub mod path;
 pub mod spectral;
 pub mod spectral_single;
 pub mod whitted;
-pub mod hero;
 
+pub use hero::*;
 pub use path::*;
 pub use spectral::*;
-pub use whitted::*;
 pub use spectral_single::*;
-pub use hero::*;
+pub use whitted::*;
 
 use crate::camera::sensor::Pixel;
 use crate::geometry::Ray;
@@ -59,7 +59,7 @@ pub trait Integrator: Send + Sync {
 pub enum DirectIllumination {
     /// Get direct illumination for all emitters.
     All,
-    /// Get direct illumination fora random emitter.
+    /// Get direct illumination for a random emitter.
     Random,
 }
 

@@ -5,7 +5,7 @@ use std::env::args;
 use std::error::Error;
 use std::ops::Range;
 
-use image::{ImageBuffer, io::Reader, Rgb};
+use image::{io::Reader, ImageBuffer, Rgb};
 use itertools::{Itertools, MinMaxResult};
 use plotters::prelude::*;
 
@@ -48,7 +48,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let mut chart = ChartBuilder::on(&root)
             .caption("2D Guassian PDF", ("sans-serif", 20))
-            .build_cartesian_3d(data.deviation.clone(), data.values.clone(), data.time_range.clone())?;
+            .build_cartesian_3d(
+                data.deviation.clone(),
+                data.values.clone(),
+                data.time_range.clone(),
+            )?;
         chart.with_projection(|mut p| {
             p.pitch = 1.57 - (1.57 - pitch as f64 / 50.0).abs();
             p.scale = 0.7;
@@ -58,10 +62,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         chart.configure_axes().draw()?;
 
         chart.draw_series(
-            SurfaceSeries::xoz(data.deviation.clone(), data.time_range.clone(), |x, z| data.f(x, z))
-                .style_func(&|&v| {
-                    (&HSLColor(240.0 / 360.0 - 240.0 / 360.0 * v as f64 / 5.0, 1.0, 0.7)).into()
-                }),
+            SurfaceSeries::xoz(data.deviation.clone(), data.time_range.clone(), |x, z| {
+                data.f(x, z)
+            })
+            .style_func(&|&v| {
+                (&HSLColor(240.0 / 360.0 - 240.0 / 360.0 * v as f64 / 5.0, 1.0, 0.7)).into()
+            }),
         )?;
 
         root.present()?;
@@ -82,33 +88,46 @@ struct ChartData {
 
 impl ChartData {
     pub fn new(runtime: Runtime, frame_steps: usize, target_img: Rgb16Image) -> Self {
-        let mut time = Vec::with_capacity((runtime.renderer.config.passes as f64 / frame_steps as f64).ceil() as usize);
+        let mut time = Vec::with_capacity(
+            (runtime.renderer.config.passes as f64 / frame_steps as f64).ceil() as usize,
+        );
 
         let (pool, c) = runtime.create_pool();
         while !runtime.done() {
             let mut diffs = HashMap::new();
 
-            runtime.run_pool(&pool, c.clone(), frame_steps);
+            runtime.run_frames(&pool, c.clone(), frame_steps);
             let img: Rgb16Image = runtime.renderer.get_image();
-            target_img.pixels().zip(img.pixels()).for_each(|(target, actual)| {
-                let r = u16::abs_diff(target[0], actual[0]) as u32;
-                let g = u16::abs_diff(target[1], actual[1]) as u32;
-                let b = u16::abs_diff(target[2], actual[2]) as u32;
+            target_img
+                .pixels()
+                .zip(img.pixels())
+                .for_each(|(target, actual)| {
+                    let r = u16::abs_diff(target[0], actual[0]) as u32;
+                    let g = u16::abs_diff(target[1], actual[1]) as u32;
+                    let b = u16::abs_diff(target[2], actual[2]) as u32;
 
-                *diffs.entry(r).or_insert(0) += 1;
-                *diffs.entry(g).or_insert(0) += 1;
-                *diffs.entry(b).or_insert(0) += 1;
-            });
+                    *diffs.entry(r).or_insert(0) += 1;
+                    *diffs.entry(g).or_insert(0) += 1;
+                    *diffs.entry(b).or_insert(0) += 1;
+                });
 
             time.push(diffs);
         }
 
-        let (x_min, x_max) = match time.iter().flat_map(|m| m.iter()).minmax_by(|l, r| l.0.cmp(r.0)) {
+        let (x_min, x_max) = match time
+            .iter()
+            .flat_map(|m| m.iter())
+            .minmax_by(|l, r| l.0.cmp(r.0))
+        {
             MinMaxResult::NoElements => unreachable!(),
             MinMaxResult::OneElement(_) => unreachable!(),
             MinMaxResult::MinMax((&min, _), (&max, _)) => (min, max),
         };
-        let (z_min, z_max) = match time.iter().flat_map(|m| m.iter()).minmax_by(|l, r| l.1.cmp(r.1)) {
+        let (z_min, z_max) = match time
+            .iter()
+            .flat_map(|m| m.iter())
+            .minmax_by(|l, r| l.1.cmp(r.1))
+        {
             MinMaxResult::NoElements => unreachable!(),
             MinMaxResult::OneElement(_) => unreachable!(),
             MinMaxResult::MinMax((_, &min), (_, &max)) => (min, max),
@@ -122,7 +141,7 @@ impl ChartData {
             time,
             deviation,
             values,
-            time_range
+            time_range,
         }
     }
 
