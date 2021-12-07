@@ -129,7 +129,7 @@ impl Runtime {
         let checkpoint_flag = Arc::new(AtomicBool::new(false));
 
         if let Err(e) = signal_hook::flag::register(signals::SIGUSR2, checkpoint_flag.clone()) {
-            log::warn!(target: "Runtime", "unable to register SIGUSR2 for saving rendering: {}", e);
+            log::warn!(target: "Runtime", "unable to register SIGUSR2 for saving checkpoint: {}", e);
         } else {
             let cancel = self.cancel.clone();
             let serde = RuntimeSerde {
@@ -147,7 +147,7 @@ impl Runtime {
                     thread::sleep(Duration::from_secs(1));
                 }
             });
-            log::info!(target: "Runtime", "registered SIGUSR2 for saving rendering");
+            log::info!(target: "Runtime", "registered SIGUSR2 for saving checkpoint");
         }
     }
 
