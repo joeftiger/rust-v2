@@ -31,6 +31,8 @@ env_logger = "0.9.0"
 itertools = "0.10.1"
 poloto = "3.3.0"
 
+plotters = "0.3.1"
+
 [features]
 default = ["spectral"]
 spectral = []
