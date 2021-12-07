@@ -28,10 +28,8 @@ signal-hook = "0.3.10"
 log = "0.4.14"
 env_logger = "0.9.0"
 
-itertools = "0.10.1"
-poloto = "3.3.0"
-
-plotters = "0.3.1"
+itertools = "0.10.3"
+poloto = "3.6.5"
 
 [features]
 default = ["spectral"]

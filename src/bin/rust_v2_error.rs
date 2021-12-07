@@ -1,4 +1,6 @@
 #![feature(total_cmp)]
+#![feature(array_zip)]
+#![feature(int_roundings)]
 
 use cgmath::{InnerSpace, Vector3};
 use image::io::Reader;
@@ -6,73 +8,100 @@ use image::{ImageBuffer, Rgb};
 use rust_v2::runtime::Runtime;
 use std::env::args;
 use std::error::Error;
+use std::fs;
 
 pub type Rgb16 = Rgb<u16>;
 pub type Rgb16Image = ImageBuffer<Rgb16, Vec<u16>>;
 
 static HELP: &str = r#"
 USAGE:
-    error-gif <log_scale> <frame_steps> <target_img> <scene0> <scene1> <out>
+    error-gif <frame_steps> <target_img> <scene0> <scene1>
 
 EXAMPLE:
-    error-gif false 10 cornell.png hero.ron out.gif
+    error-gif 10 cornell.png hero.ron out.gif
 
 ARGUMENTS:
-    log_scale       BOLEAN      whether to use the log scale
     frame_steps     INTEGER     store every these-steps into the history
     target_img      STRING      the target image path to calculate the difference towards
-    scene           STRING      the scene file to load
-    out             STRING      output path of gif
+    scene0          STRING      the first scene file to load
+    scene1          STRING      the second scene file to load
 "#;
 
 use util::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = args().skip(1);
+    env_logger::init();
 
-    let log_scale: bool = args.next().expect(HELP).parse().expect(HELP);
-    let frame_steps: usize = args.next().expect(HELP).parse().expect(HELP);
-    let target_image_path = args.next().expect(HELP);
-    let original = Reader::open(&target_image_path)?
-        .with_guessed_format()?
-        .decode()?
-        .into_rgb16();
-    let scene0_name = args.next().expect(HELP);
-    let scene1_name = args.next().expect(HELP);
-    let scene0 = Runtime::load(&scene0_name).expect(HELP);
-    let scene1 = Runtime::load(&scene1_name).expect(HELP);
+    log::info!(target: "Rust-V2-Error", "initializing...");
+    let (frames, original, runtimes) = parse_args().expect(HELP);
 
-    let mut plots = ErrorType::variants().map(|e| {
-        poloto::plot(
-            e.to_string(),
-            "passes/pixel",
-            format!("{} (ln={})", e.to_string(), log_scale),
-        )
-    });
+    let mut plots = ErrorType::variants().map(|e| poloto::plot(e.to_string(), "frame", "error"));
 
-    let mut errors = [Vec::new(); ErrorType::num_types()];
-    let (pool0, cancel) = scene0.create_pool();
-    let (pool1, _) = scene1.create_pool();
-    while !scene1.done() {
-        scene1.run_pool(&pool, cancel.clone(), frame_steps);
-        let current = scene1.renderer.get_image();
+    let mut errors = ErrorType::variants().map(|_| Vec::new());
+    log::info!(target: "Rust-V2-Error", "initialization completed!");
+    for runtime in &runtimes {
+        errors.iter_mut().for_each(|e| e.clear());
+        let runtime_name = runtime.renderer.config.output.as_str();
+        log::info!(target: "Rust-V2-Error", "calculating error for scene: {}", runtime_name);
 
-        for i in 0..ErrorType::num_types() {
-            let e = ErrorType::variant(i);
-            let error = e.calc(&original, &current);
+        let num_steps = runtime.passes.unstable_div_ceil(frames);
+        let x_range = 0..=num_steps;
 
-            errors[i].push(error);
+        while !runtime.done() {
+            runtime.run_frames(frames);
+
+            let current = runtime.renderer.get_image();
+
+            ErrorType::variants()
+                .iter_mut()
+                .enumerate()
+                .for_each(|(i, e)| errors[i].push(e.calc(&original, &current)));
         }
+
+        log::info!(target: "Rust-V2-Error", "plotting error to SVG...");
+        for i in 0..ErrorType::num_types() {
+            let error = errors[i].clone();
+            let plot = &mut plots[i];
+
+            let data = x_range
+                .clone()
+                .zip(error)
+                .map(|(x, y)| ((x * frames) as f64, y));
+            plot.line(runtime_name, data);
+        }
+        log::info!(target: "Rust-V2-Error", "plotting completed!");
     }
 
-    for i in 0..ErrorType::num_types() {
-        plots[i].line()
+    log::info!(target: "Rust-V2-Error", "saving plots...");
+    for (e, plot) in ErrorType::variants().zip(plots) {
+        fs::write(
+            format!("{}.svg", e.to_string()),
+            format!("{}", poloto::disp(|a| poloto::simple_theme(a, plot))),
+        )?;
     }
+    log::info!(target: "Rust-V2-Error", "saving completed!");
 
     Ok(())
 }
 
+fn parse_args() -> Option<(usize, Rgb16Image, [Runtime; 2])> {
+    let mut args = args().skip(1);
+
+    let frame_steps: usize = args.next()?.parse().ok()?;
+    let original = Reader::open(args.next()?)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()?
+        .into_rgb16();
+    let runtimes = [Runtime::load(&args.next()?)?, Runtime::load(&args.next()?)?];
+
+    Some((frame_steps, original, runtimes))
+}
+
 #[derive(Copy, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 enum ErrorType {
     /// Mean Squared Error
     MSE,
@@ -86,20 +115,10 @@ enum ErrorType {
     SSIM,
 }
 
+#[allow(dead_code)]
 impl ErrorType {
     pub const fn num_types() -> usize {
         5
-    }
-
-    pub const fn variant(i: usize) -> Self {
-        match i {
-            0 => Self::MSE,
-            1 => Self::PSE,
-            2 => Self::SNR,
-            3 => Self::PSNR,
-            4 => Self::SSIM,
-            _ => panic!(),
-        }
     }
 
     pub const fn variants() -> [Self; Self::num_types()] {
@@ -123,7 +142,10 @@ impl ErrorType {
     }
 
     fn pse(original: &Rgb16Image, current: &Rgb16Image) -> f64 {
-        se(original, current).into_iter().max_by(f64::total_cmp).unwrap()
+        se(original, current)
+            .into_iter()
+            .max_by(f64::total_cmp)
+            .unwrap()
     }
 
     fn snr(original: &Rgb16Image, current: &Rgb16Image) -> f64 {
@@ -183,13 +205,13 @@ mod util {
     }
 
     pub fn vec3s(img: &Rgb16Image) -> Vec<Vector3<f64>> {
-        img.pixels().map(|px| px_to_vec3(px)).collect()
+        img.pixels().map(px_to_vec3).collect()
     }
 
     pub fn diff(a: &Rgb16Image, b: &Rgb16Image) -> Vec<Vector3<f64>> {
         a.pixels()
-            .map(|px| px_to_vec3(px))
-            .zip(b.pixels().map(|px| px_to_vec3(px)))
+            .map(px_to_vec3)
+            .zip(b.pixels().map(px_to_vec3))
             .map(|(left, right)| left - right)
             .collect()
     }

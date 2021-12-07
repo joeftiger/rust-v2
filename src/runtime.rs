@@ -115,9 +115,7 @@ impl Runtime {
             thread::spawn(move || {
                 while !cancel.load(Ordering::Relaxed) {
                     if save_flag.fetch_and(false, Ordering::Relaxed) {
-                        log::info!(target: "Runtime", "saving image...");
                         r.save_image();
-                        log::info!(target: "Runtime", "saved image!");
                     }
 
                     thread::sleep(Duration::from_secs(1));
@@ -130,7 +128,7 @@ impl Runtime {
     fn checkpoint_signal(&self) {
         let checkpoint_flag = Arc::new(AtomicBool::new(false));
 
-        if let Err(e) = signal_hook::flag::register(signals::SIGUSR1, checkpoint_flag.clone()) {
+        if let Err(e) = signal_hook::flag::register(signals::SIGUSR2, checkpoint_flag.clone()) {
             log::warn!(target: "Runtime", "unable to register SIGUSR2 for saving rendering: {}", e);
         } else {
             let cancel = self.cancel.clone();
@@ -205,15 +203,20 @@ impl Runtime {
     pub fn run_frames(&self, frames: usize) {
         let progress = self.tile_progress.load(Ordering::SeqCst);
         let num_jobs = (frames * self.tiles).min(self.total_tiles - progress);
+        log::trace!(target: "Runtime", "continuing from frame {} with {} jobs", progress / self.tiles, num_jobs);
 
+        let threadpool = Threadpool::new(self.threadpool.workers(), None, None);
         let tiles = self.tiles;
-        for i in 0..num_jobs {
+        for _ in 0..num_jobs {
             let r = Arc::clone(&self.renderer);
-            self.threadpool.execute(move || {
-                let index = (progress + i) % tiles;
+            let p = self.tile_progress.clone();
+            threadpool.execute(move || {
+                let index = p.fetch_add(1, Ordering::SeqCst) % tiles;
                 r.integrate(index);
-            })
+            });
         }
+
+        threadpool.join();
     }
 
     pub fn run(&self) {
