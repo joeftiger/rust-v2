@@ -1,7 +1,7 @@
 Config (
     config: (
         output: "glass",
-        passes: 16384,
+        passes: 100000,
         threads: None,
     ),
     camera: {
@@ -13,32 +13,33 @@ Config (
                 z: 4,
             ),
             target: (
-                x: 0.5,
-                y: -0.5,
-                z: 0.5,
+                x: -1,
+                y: 0,
+                z: -1,
             ),
             up: (
                 x: 0,
                 y: 1,
                 z: 0,
             ),
-            fov: 17,
+            fov: 60,
             resolution: (
                 x: 256,
-                y: 256,
+                y: 1024,
             ),
         )),
     },
     integrator: {
         "SpectralPath": (
             max_depth: 8,
-            spectral_sampler: Hero,
             sampler: Random,
+            spectral_sampler: Hero,
             direct_illum: All,
         ),
     },
     scene: (
         objects: [
+            // ceiling
             Receiver((
                 geometry: {
                     "Aabb": (
@@ -67,6 +68,7 @@ Config (
                 ),
                 tag: "debug",
             )),
+            // left wall
             Receiver((
                 geometry: {
                     "Aabb": (
@@ -94,6 +96,7 @@ Config (
                     ],
                 ),
             )),
+            // back wall
             Receiver((
                 geometry: {
                     "Aabb": (
@@ -121,6 +124,7 @@ Config (
                     ],
                 ),
             )),
+            // right wall
             Receiver((
                 geometry: {
                     "Aabb": (
@@ -148,6 +152,7 @@ Config (
                     ],
                 ),
             )),
+            // floor
             Receiver((
                 geometry: {
                     "Aabb": (
@@ -177,29 +182,11 @@ Config (
             )),
             Receiver((
                 geometry: {
-                    /*"Bubble": (
-                    	inner: (
-	                    center: (
-	                        x: 0.5,
-	                        y: -0.5,
-	                        z: 0.5,
-	                    ),
-	                    radius: 0.4,
-                    	),
-                    	outer: (
-	                    center: (
-	                        x: 0.5,
-	                        y: -0.5,
-	                        z: 0.5,
-	                    ),
-	                    radius: 0.5,
-                    	),
-                    ),*/
                     "Sphere": (
                         center: (
-                            x: 0.5,
-                            y: -0.5,
-                            z: 0.5,
+                            x: -1,
+                            y: -1,
+                            z: -1,
                         ),
                         radius: 0.5,
                     ),
@@ -212,7 +199,7 @@ Config (
                                 t: Color(White),
                                 fresnel: (
                                     eta_i: Air,
-                                    eta_t: Sapphire,
+                                    eta_t: Linear(2, 1.5),
                                 ),
                             ),
                         },
@@ -221,11 +208,16 @@ Config (
             )),
             Emitter((
                 geometry: {
+                    // "Point": ((
+                    //     x: -0.5,
+                    //     y: 0.5,
+                    //     z: -0.5,
+                    // )),
                     "Sphere": (
                         center: (
-                            x: -0.5,
-                            y: 0.5,
-                            z: -0.5,
+                            x: -1,
+                            y: 1,
+                            z: -1,
                         ),
                         radius: 0.5,
                     ),
