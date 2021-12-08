@@ -66,11 +66,14 @@ impl Renderer {
         buffer
     }
 
-    pub fn save_image(&self) {
+    pub fn save_image(&self, appendix: Option<usize>) {
         log::info!(target: "Renderer", "saving image...");
         let image = self.get_image::<u16>();
 
-        let path = format!("{}.png", &self.config.output);
+        let path = match appendix {
+            None => format!("{}.png", &self.config.output),
+            Some(num) => format!("{}-{}.png", &self.config.output, num),
+        };
 
         match image.save(path) {
             Ok(_) => log::info!(target: "Renderer", "saved image!"),

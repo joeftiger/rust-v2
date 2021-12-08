@@ -111,11 +111,13 @@ impl Runtime {
         } else {
             let cancel = self.cancel.clone();
             let r = self.renderer.clone();
+            let p = self.tile_progress.clone();
+            let tiles = self.tiles;
 
             thread::spawn(move || {
                 while !cancel.load(Ordering::Relaxed) {
                     if save_flag.fetch_and(false, Ordering::Relaxed) {
-                        r.save_image();
+                        r.save_image(Some(p.load(Ordering::Relaxed) / tiles));
                     }
 
                     thread::sleep(Duration::from_secs(1));

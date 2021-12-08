@@ -13,7 +13,7 @@ fn start() {
     runtime.run();
     runtime.join_threadpool();
 
-    runtime.renderer.save_image();
+    runtime.renderer.save_image(None);
 
     if runtime.cancel.load(Ordering::Relaxed) {
         runtime.save();

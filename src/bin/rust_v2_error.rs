@@ -35,7 +35,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     log::info!(target: "Rust-V2-Error", "initializing...");
     let (frames, original, runtimes) = parse_args().expect(HELP);
 
-    let mut plots = ErrorType::variants().map(|e| poloto::plot(e.to_string(), "frame", e.y_label().to_string()));
+    let mut plots = ErrorType::variants()
+        .map(|e| poloto::plot(e.to_string(), "frame", e.y_label().to_string()));
 
     let mut errors = ErrorType::variants().map(|_| Vec::new());
     log::info!(target: "Rust-V2-Error", "initialization completed!");
