@@ -15,10 +15,10 @@ pub type Rgb16Image = ImageBuffer<Rgb16, Vec<u16>>;
 
 static HELP: &str = r#"
 USAGE:
-    error-gif <frame_steps> <target_img> <scene0> <scene1>
+    rust_v2_error <frame_steps> <target_img> <scene0> <scene1>
 
 EXAMPLE:
-    error-gif 10 cornell.png hero.ron out.gif
+    rust_v2_error 25 cornell.png hero.ron random.ron
 
 ARGUMENTS:
     frame_steps     INTEGER     store every these-steps into the history
@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     log::info!(target: "Rust-V2-Error", "initializing...");
     let (frames, original, runtimes) = parse_args().expect(HELP);
 
-    let mut plots = ErrorType::variants().map(|e| poloto::plot(e.to_string(), "frame", "error"));
+    let mut plots = ErrorType::variants().map(|e| poloto::plot(e.to_string(), "frame", e.y_label().to_string()));
 
     let mut errors = ErrorType::variants().map(|_| Vec::new());
     log::info!(target: "Rust-V2-Error", "initialization completed!");
@@ -123,6 +123,14 @@ impl ErrorType {
 
     pub const fn variants() -> [Self; Self::num_types()] {
         [Self::MSE, Self::PSE, Self::SNR, Self::PSNR, Self::SSIM]
+    }
+
+    pub const fn y_label(&self) -> &str {
+        match self {
+            ErrorType::MSE | ErrorType::PSE => "error",
+            ErrorType::SNR | ErrorType::PSNR => "ratio (dB)",
+            ErrorType::SSIM => "similarity",
+        }
     }
 
     fn calc(&self, original: &Rgb16Image, current: &Rgb16Image) -> f64 {
