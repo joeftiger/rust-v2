@@ -17,7 +17,11 @@ pub struct Path {
 
 impl Path {
     pub fn new(max_depth: u32, sampler: FloatSampler, direct_illum: DirectIllumination) -> Self {
-        Self { max_depth, sampler, direct_illum }
+        Self {
+            max_depth,
+            sampler,
+            direct_illum,
+        }
     }
 }
 

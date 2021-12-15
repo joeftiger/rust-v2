@@ -113,7 +113,7 @@ impl Emitter {
         let incident = occlusion.ray.direction;
         let radiance = self.radiance(-incident, surface_sample.normal);
 
-        EmitterSample::new(radiance, incident, surface_sample.pdf, occlusion)
+        EmitterSample::new(radiance, incident, occlusion)
     }
 
     /// Samples the emitter.
@@ -138,7 +138,7 @@ impl Emitter {
         let incident = occlusion.ray.direction;
         let radiances = self.radiance_packet(-incident, surface_sample.normal, indices);
 
-        EmitterSample::new(radiances, incident, surface_sample.pdf, occlusion)
+        EmitterSample::new(radiances, incident, occlusion)
     }
 
     /// Samples the emitter.
@@ -158,7 +158,7 @@ impl Emitter {
         let incident = occlusion_tester.ray.direction;
         let radiance = self.radiance_lambda(-incident, surface_sample.normal, index);
 
-        EmitterSample::new(radiance, incident, surface_sample.pdf, occlusion_tester)
+        EmitterSample::new(radiance, incident, occlusion_tester)
     }
 }
 
@@ -188,15 +188,13 @@ impl Geometry for Emitter {
 pub struct EmitterSample<T> {
     pub radiance: T,
     pub incident: Vec3,
-    pub pdf: Float,
     pub occlusion: OcclusionTester,
 }
 impl<T> EmitterSample<T> {
-    pub const fn new(radiance: T, incident: Vec3, pdf: Float, occlusion: OcclusionTester) -> Self {
+    pub const fn new(radiance: T, incident: Vec3, occlusion: OcclusionTester) -> Self {
         Self {
             radiance,
             incident,
-            pdf,
             occlusion,
         }
     }
