@@ -1,7 +1,7 @@
 use crate::renderer::Renderer;
 use crate::util::threadpool::Threadpool;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use lz4_flex::block::DecompressError;
+
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use serde::{Deserialize, Serialize};
 use signal_hook::consts as signals;

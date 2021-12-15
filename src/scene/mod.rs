@@ -82,6 +82,7 @@ impl Scene {
     }
 }
 
+#[derive(Default)]
 pub struct SceneBuilder {
     objects: Vec<SceneObject>,
 }
@@ -93,12 +94,12 @@ impl SceneBuilder {
         }
     }
 
-    pub fn add(mut self, obj: SceneObject) -> Self {
+    pub fn append(mut self, obj: SceneObject) -> Self {
         self.objects.push(obj);
         self
     }
 
-    pub fn append(mut self, mut objs: Vec<SceneObject>) -> Self {
+    pub fn append_all(mut self, mut objs: Vec<SceneObject>) -> Self {
         self.objects.append(&mut objs);
         self
     }
@@ -158,6 +159,36 @@ impl Geometry for Scene {
     }
 }
 
+#[derive(Serialize)]
+pub struct SceneDataRef<'a> {
+    objects: &'a [SceneObject],
+}
+
+impl<'a> From<&'a Scene> for SceneDataRef<'a> {
+    fn from(s: &'a Scene) -> Self {
+        Self {
+            objects: &s.objects,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct SceneData {
+    objects: Vec<SceneObject>,
+}
+
+impl From<Scene> for SceneData {
+    fn from(s: Scene) -> Self {
+        Self { objects: s.objects }
+    }
+}
+
+impl From<SceneData> for Scene {
+    fn from(s: SceneData) -> Self {
+        SceneBuilder::new().append_all(s.objects).build()
+    }
+}
+
 impl Serialize for Scene {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -167,27 +198,5 @@ impl Serialize for Scene {
             objects: &self.objects,
         }
         .serialize(serializer)
-    }
-}
-
-#[derive(Serialize)]
-struct SceneDataRef<'a> {
-    objects: &'a [SceneObject],
-}
-
-#[derive(Serialize, Deserialize)]
-struct SceneData {
-    objects: Vec<SceneObject>,
-}
-impl From<SceneData> for Scene {
-    fn from(data: SceneData) -> Self {
-        SceneBuilder::new().append(data.objects).build()
-    }
-}
-impl From<Scene> for SceneData {
-    fn from(scene: Scene) -> Self {
-        Self {
-            objects: scene.objects,
-        }
     }
 }

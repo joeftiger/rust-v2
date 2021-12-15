@@ -2,13 +2,13 @@ use crate::camera::sensor::Sensor;
 use crate::camera::Camera;
 use crate::config::Config;
 use crate::integrator::Integrator;
-use crate::scene::Scene;
+use crate::scene::{Scene, SceneData, SceneDataRef};
 use crate::Spectrum;
 use image::{ImageBuffer, Rgb};
 use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Deserialize)]
-#[serde(from = "RendererDe")]
+#[serde(from = "RendererData")]
 pub struct Renderer {
     pub config: Config,
     pub camera: Box<dyn Camera>,
@@ -23,14 +23,15 @@ impl Renderer {
     pub fn new(
         config: Config,
         camera: Box<dyn Camera>,
-        sensor: Sensor,
+        sensor: Option<Sensor>,
         integrator: Box<dyn Integrator>,
         scene: Scene,
     ) -> Self {
+        let res = camera.resolution();
         Self {
             config,
             camera,
-            sensor,
+            sensor: sensor.unwrap_or_else(|| Sensor::new(res)),
             integrator,
             scene,
         }
@@ -82,180 +83,60 @@ impl Renderer {
     }
 }
 
-/*impl<'de> Deserialize<'de> for Renderer {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        enum Field {
-            Config,
-            Camera,
-            Sensor,
-            Integrator,
-            Scene,
+// ===================== Serialization into a full ref representation ==============================
+// Note the sensor being `Option` due to deserialization requiring it!
+#[derive(Serialize)]
+pub struct RendererDataRef<'a> {
+    config: &'a Config,
+    camera: &'a dyn Camera,
+    sensor: Option<&'a Sensor>,
+    integrator: &'a dyn Integrator,
+    scene_data: SceneDataRef<'a>,
+}
+impl<'a> From<&'a Renderer> for RendererDataRef<'a> {
+    fn from(r: &'a Renderer) -> Self {
+        Self {
+            config: &r.config,
+            camera: &*r.camera,
+            sensor: Some(&r.sensor),
+            integrator: &*r.integrator,
+            scene_data: (&r.scene).into(),
         }
-        impl<'d> Deserialize<'d> for Field {
-            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: Deserializer<'d>,
-            {
-                struct FieldVisitor;
-                impl<'v> de::Visitor<'v> for FieldVisitor {
-                    type Value = Field;
-
-                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                        write!(
-                            formatter,
-                            "'config', 'camera', 'sensor' (optional), 'integrator', 'scene'"
-                        )
-                    }
-
-                    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-                    where
-                        E: de::Error,
-                    {
-                        match v {
-                            "config" => Ok(Field::Config),
-                            "camera" => Ok(Field::Camera),
-                            "sensor" => Ok(Field::Sensor),
-                            "integrator" => Ok(Field::Integrator),
-                            "scene" => Ok(Field::Scene),
-                            _ => Err(de::Error::unknown_field(v, FIELDS)),
-                        }
-                    }
-                }
-
-                deserializer.deserialize_identifier(FieldVisitor)
-            }
-        }
-
-        struct RendererVisitor;
-        impl<'v> de::Visitor<'v> for RendererVisitor {
-            type Value = Renderer;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "struct Renderer (reduced or full)")
-            }
-
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: de::MapAccess<'v>,
-            {
-                let mut config = None;
-                let mut camera: Option<Box<dyn Camera>> = None;
-                let mut sensor = None;
-                let mut integrator = None;
-                let mut scene = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        Field::Config => {
-                            if config.replace(map.next_value()?).is_some() {
-                                return Err(de::Error::duplicate_field("config"));
-                            }
-                        }
-                        Field::Camera => {
-                            if camera.replace(map.next_value()?).is_some() {
-                                return Err(de::Error::duplicate_field("camera"));
-                            }
-                        }
-                        Field::Sensor => {
-                            if sensor.replace(map.next_value()?).is_some() {
-                                return Err(de::Error::duplicate_field("sensor"));
-                            }
-                        }
-                        Field::Integrator => {
-                            if integrator.replace(map.next_value()?).is_some() {
-                                return Err(de::Error::duplicate_field("integrator"));
-                            }
-                        }
-                        Field::Scene => {
-                            if scene.replace(map.next_value()?).is_some() {
-                                return Err(de::Error::duplicate_field("scene"));
-                            }
-                        }
-                    }
-                }
-
-                let config = config.ok_or_else(|| de::Error::missing_field("config"))?;
-                let camera = camera.ok_or_else(|| de::Error::missing_field("camera"))?;
-                let sensor = sensor.unwrap_or_else(|| Sensor::new(camera.resolution()));
-                let integrator =
-                    integrator.ok_or_else(|| de::Error::missing_field("integrator"))?;
-                let scene = scene.unwrap_or_else(Scene::default);
-
-                Ok(Renderer::new(config, camera, sensor, integrator, scene))
-            }
-        }
-
-        const FIELDS: &[&str] = &["config", "camera", "sensor", "integrator", "scene"];
-        deserializer.deserialize_struct("Renderer", FIELDS, RendererVisitor)
     }
-}*/
-
+}
 impl Serialize for Renderer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        RendererSer::Checkpoint {
-            config: &self.config,
-            camera: &*self.camera,
-            sensor: &self.sensor,
-            integrator: &*self.integrator,
-            scene: &self.scene,
-        }
-        .serialize(serializer)
+        RendererDataRef::from(self).serialize(serializer)
     }
 }
 
-impl From<RendererDe> for Renderer {
-    fn from(de: RendererDe) -> Self {
-        match de {
-            RendererDe::Checkpoint {
-                config,
-                camera,
-                sensor,
-                integrator,
-                scene,
-            } => Self::new(config, camera, sensor, integrator, scene),
-            RendererDe::Config {
-                config,
-                camera,
-                integrator,
-                scene,
-            } => {
-                let res = camera.resolution();
-                Self::new(config, camera, Sensor::new(res), integrator, scene)
-            }
-        }
+// ===================== Deserialization from full representation (potentially withou sensor) ======
+// Note we convert Renderer to RendererData with a `None` sensor!
+#[derive(Deserialize, Serialize)]
+pub struct RendererData {
+    config: Config,
+    camera: Box<dyn Camera>,
+    #[serde(default)]
+    sensor: Option<Sensor>,
+    integrator: Box<dyn Integrator>,
+    scene: SceneData,
+}
+impl From<RendererData> for Renderer {
+    fn from(r: RendererData) -> Self {
+        Self::new(r.config, r.camera, r.sensor, r.integrator, r.scene.into())
     }
 }
-
-#[derive(Serialize)]
-enum RendererSer<'a> {
-    Checkpoint {
-        config: &'a Config,
-        camera: &'a dyn Camera,
-        sensor: &'a Sensor,
-        integrator: &'a dyn Integrator,
-        scene: &'a Scene,
-    },
-}
-
-#[derive(Deserialize)]
-enum RendererDe {
-    Checkpoint {
-        config: Config,
-        camera: Box<dyn Camera>,
-        sensor: Sensor,
-        integrator: Box<dyn Integrator>,
-        scene: Scene,
-    },
-    Config {
-        config: Config,
-        camera: Box<dyn Camera>,
-        integrator: Box<dyn Integrator>,
-        scene: Scene,
-    },
+impl From<Renderer> for RendererData {
+    fn from(r: Renderer) -> Self {
+        Self {
+            config: r.config,
+            camera: r.camera,
+            sensor: None,
+            integrator: r.integrator,
+            scene: r.scene.into(),
+        }
+    }
 }

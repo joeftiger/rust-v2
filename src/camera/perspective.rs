@@ -1,19 +1,9 @@
 use crate::camera::Camera;
 use crate::geometry::Ray;
 use crate::sampler::CameraSampler;
-use crate::{Float, Mat4, UVec2, Vec2, Vec3};
-use cgmath::{ElementWise, EuclideanSpace, InnerSpace, Point3, Transform, Zero};
+use crate::{Float, UVec2, Vec3};
+use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct CameraConfig {
-    pub sampler: CameraSampler,
-    pub eye: Vec3,
-    pub target: Vec3,
-    pub up: Vec3,
-    pub fov: Float,
-    pub resolution: UVec2,
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(from = "CameraConfig")]
@@ -69,18 +59,6 @@ impl PerspectiveCamera {
     }
 }
 
-impl From<PerspectiveCamera> for CameraConfig {
-    fn from(p: PerspectiveCamera) -> Self {
-        *p.config
-    }
-}
-
-impl From<CameraConfig> for PerspectiveCamera {
-    fn from(c: CameraConfig) -> Self {
-        Self::new(c)
-    }
-}
-
 #[typetag::serde]
 impl Camera for PerspectiveCamera {
     fn resolution(&self) -> UVec2 {
@@ -97,5 +75,27 @@ impl Camera for PerspectiveCamera {
         let direction = direction.normalize();
 
         Ray::new(self.eye, direction)
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct CameraConfig {
+    pub sampler: CameraSampler,
+    pub eye: Vec3,
+    pub target: Vec3,
+    pub up: Vec3,
+    pub fov: Float,
+    pub resolution: UVec2,
+}
+
+impl From<PerspectiveCamera> for CameraConfig {
+    fn from(p: PerspectiveCamera) -> Self {
+        *p.config
+    }
+}
+
+impl From<CameraConfig> for PerspectiveCamera {
+    fn from(c: CameraConfig) -> Self {
+        Self::new(c)
     }
 }
