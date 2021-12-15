@@ -10,6 +10,7 @@ pub struct Receiver {
     #[serde(default)]
     pub bsdf: BSDF,
     #[serde(default)]
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub tag: String,
 }
 

@@ -13,6 +13,7 @@ pub struct Emitter {
     pub bsdf: BSDF,
     pub emission: Spectrum,
     #[serde(default)]
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub tag: String,
 }
 

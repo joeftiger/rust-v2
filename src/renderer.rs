@@ -120,10 +120,30 @@ pub struct RendererData {
     config: Config,
     camera: Box<dyn Camera>,
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     sensor: Option<Sensor>,
     integrator: Box<dyn Integrator>,
     scene: SceneData,
 }
+
+impl RendererData {
+    pub fn new(
+        config: Config,
+        camera: Box<dyn Camera>,
+        sensor: Option<Sensor>,
+        integrator: Box<dyn Integrator>,
+        scene: SceneData,
+    ) -> Self {
+        RendererData {
+            config,
+            camera,
+            sensor,
+            integrator,
+            scene,
+        }
+    }
+}
+
 impl From<RendererData> for Renderer {
     fn from(r: RendererData) -> Self {
         Self::new(r.config, r.camera, r.sensor, r.integrator, r.scene.into())

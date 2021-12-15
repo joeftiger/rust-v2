@@ -104,6 +104,12 @@ impl SceneBuilder {
         self
     }
 
+    pub fn build_data(self) -> SceneData {
+        SceneData {
+            objects: self.objects,
+        }
+    }
+
     pub fn build(self) -> Scene {
         let emitters = self
             .objects
