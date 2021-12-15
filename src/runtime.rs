@@ -1,6 +1,7 @@
 use crate::renderer::Renderer;
 use crate::util::threadpool::Threadpool;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use lz4_flex::block::DecompressError;
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use serde::{Deserialize, Serialize};
 use signal_hook::consts as signals;
@@ -260,13 +261,16 @@ impl Runtime {
 
     #[cold]
     pub fn deserialize_checkpoint(bytes: &[u8]) -> Self {
-        let binary = decompress_size_prepended(bytes)
-            .map_err(|e| log::error!(target: "Runtime", "unable to decompress checkpoint: {}", e))
-            .unwrap();
-        bincode::deserialize::<RuntimeSerde>(&binary)
-            .map_err(|e| log::error!(target: "Runtime", "unable to deserialize checkpoint: {}", e))
-            .unwrap()
-            .into()
+        match decompress_size_prepended(bytes) {
+            Ok(binary) => bincode::deserialize::<RuntimeSerde>(&binary)
+                .map_err(|e| log::error!(target: "Runtime", "unable to deserialize compressed checkpoint: {}", e))
+                .unwrap()
+                .into(),
+            Err(_) => bincode::deserialize::<RuntimeSerde>(bytes)
+                .map_err(|e| log::error!(target: "Runtime", "unable to deserialize uncompressed checkpoint: {}", e))
+                .unwrap()
+                .into(),
+        }
     }
 
     #[cold]
