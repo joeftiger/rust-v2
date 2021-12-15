@@ -5,10 +5,21 @@ use crate::{Float, Mat4, UVec2, Vec2, Vec3};
 use cgmath::{ElementWise, EuclideanSpace, InnerSpace, Point3, Transform, Zero};
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct CameraConfig {
+    pub sampler: CameraSampler,
+    pub eye: Vec3,
+    pub target: Vec3,
+    pub up: Vec3,
+    pub fov: Float,
+    pub resolution: UVec2,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(from = "CameraConfig")]
 #[serde(into = "CameraConfig")]
 pub struct PerspectiveCamera {
+    config: Box<CameraConfig>,
     sampler: CameraSampler,
     eye: Vec3,
     x_dir: Vec3,
@@ -18,14 +29,15 @@ pub struct PerspectiveCamera {
 }
 
 impl PerspectiveCamera {
-    pub fn new(
-        sampler: CameraSampler,
-        eye: Vec3,
-        target: Vec3,
-        up: Vec3,
-        fov: Float,
-        resolution: UVec2,
-    ) -> Self {
+    pub fn new(config: CameraConfig) -> Self {
+        let CameraConfig {
+            sampler,
+            eye,
+            target,
+            up,
+            fov,
+            resolution,
+        } = config;
         // compute orientation and distance of eye to scene center
         let view = (target - eye).normalize();
         let axis_right = view.cross(up).normalize();
@@ -54,6 +66,18 @@ impl PerspectiveCamera {
             lower_left,
             res: resolution,
         }
+    }
+}
+
+impl From<PerspectiveCamera> for CameraConfig {
+    fn from(p: PerspectiveCamera) -> Self {
+        *p.config
+    }
+}
+
+impl From<CameraConfig> for PerspectiveCamera {
+    fn from(c: CameraConfig) -> Self {
+        Self::new(c)
     }
 }
 
