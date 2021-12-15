@@ -45,3 +45,7 @@ codegen-units = 1
 lto = "fat"
 opt-level = 3
 incremental = true
+
+[[bin]]
+name = "srgb-vs-spectrum"
+required-features =  ["show-image"]
