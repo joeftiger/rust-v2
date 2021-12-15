@@ -13,6 +13,16 @@ pub struct Receiver {
     pub tag: String,
 }
 
+impl Receiver {
+    pub fn new(geometry: Box<dyn Geometry>, bsdf: BSDF, tag: String) -> Self {
+        Self {
+            geometry,
+            bsdf,
+            tag,
+        }
+    }
+}
+
 #[typetag::serde]
 impl Geometry for Receiver {
     #[inline]

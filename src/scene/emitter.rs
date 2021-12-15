@@ -17,6 +17,15 @@ pub struct Emitter {
 }
 
 impl Emitter {
+    pub fn new(geometry: Box<dyn Sampleable>, bsdf: BSDF, emission: Spectrum, tag: String) -> Self {
+        Self {
+            geometry,
+            bsdf,
+            emission,
+            tag,
+        }
+    }
+
     /// Computes the radiance of this emitter.
     ///
     /// # Constraints
