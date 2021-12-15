@@ -1,11 +1,11 @@
-Config (
+(
     config: (
         output: "dragon",
-        passes: 10000,
+        passes: 50,
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "NaiveCamera": (
             sampler: Random,
             eye: (
                 x: 0,
@@ -24,14 +24,14 @@ Config (
             ),
             fov: 70,
             resolution: (
-                x: 1024,
-                y: 1024,
+                x: 512,
+                y: 512,
             ),
-        )),
+        ),
     },
     integrator: {
         "SpectralPath": (
-            max_depth: 8,
+            max_depth: 16,
             sampler: Random,
             spectral_sampler: Hero,
             direct_illum: All,
@@ -178,22 +178,15 @@ Config (
             Receiver((
                 geometry: {
                     "Mesh": Config((
-                        path: "./res/meshes/dragon.obj",
+                        path: "./res/meshes/dragon_4.obj",
                         scale: Some((
-                            x: 0.015,
-                            y: 0.015,
-                            z: 0.015,
-                        )),
-                        rotation: Some((
-                            mat: (
-                                x: (x:1, y:0, z: 0),
-                                y: (x:0, y:0, z:-1),
-                                z: (x:0, y:1, z: 0),
-                            )
+                            x: 15,
+                            y: 15,
+                            z: 15,
                         )),
                         translation: Some((
                             x: 0,
-                            y: -1,
+                            y: -2.75,
                             z: 0,
                         )),
                         shading_mode: Phong,
@@ -203,8 +196,8 @@ Config (
                     bxdfs: [
                         {
                             "FresnelSpecular": (
-                                r: MulColor(0.75, White),
-                                t: MulColor(0.75, White),
+                                r: Color(White),
+                                t: Color(White),
                                 fresnel: (
                                     eta_i: Air,
                                     eta_t: Glass,
@@ -225,7 +218,7 @@ Config (
                         radius: 0.5,
                     ),
                 },
-                emission: MulColor(2, White),
+                emission: MulColor(4, White),
             )),
         ],
     ),

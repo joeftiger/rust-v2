@@ -1,11 +1,11 @@
-Config (
+(
     config: (
         output: "cornell",
-        passes: 16384,
+        passes: 20000,
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "PerspectiveCamera": (
             sampler: Random,
             eye: (
                 x: 0,
@@ -24,14 +24,14 @@ Config (
             ),
             fov: 70,
             resolution: (
-                x: 256,
-                y: 256,
+                x: 512,
+                y: 512,
             ),
-        )),
+        ),
     },
     integrator: {
         "SpectralPath": (
-            max_depth: 32,
+            max_depth: 8,
             sampler: Random,
             spectral_sampler: Hero,
             direct_illum: All,
@@ -178,20 +178,20 @@ Config (
             Emitter((
                 geometry: {
                     // "Point": ((
-                    //     x: -0.5,
-                    //     y: 0.5,
-                    //     z: -0.5,
+                    //     x: -1,
+                    //     y: 1,
+                    //     z: -1,
                     // )),
                     "Sphere": (
                         center: (
-                            x: -0.5,
-                            y: 0.5,
-                            z: -0.5,
+                            x: -1,
+                            y: 1,
+                            z: -1,
                         ),
                         radius: 0.5,
                     ),
                 },
-                emission: MulColor(4, White),
+                emission: Color(White),
             )),
         ],
     ),

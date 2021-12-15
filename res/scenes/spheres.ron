@@ -1,0 +1,835 @@
+(
+    config: (
+        output: "spheres",
+        passes: 60000,
+        threads: None,
+    ),
+    camera: {
+        "NaiveCamera": (
+            sampler: Random,
+            eye: (
+                x: 0,
+                y: 5,
+                z: 10,
+            ),
+            target: (
+                x: 0,
+                y: 0,
+                z: 0,
+            ),
+            up: (
+                x: 0,
+                y: 1,
+                z: 0,
+            ),
+            fov: 70,
+            resolution: (
+                x: 512,
+                y: 512,
+            ),
+        ),
+    },
+    integrator: {
+        "SpectralPath": (
+            max_depth: 8,
+            sampler: Random,
+            spectral_sampler: Hero,
+            direct_illum: All,
+        ),
+    },
+    scene: (
+        objects: [
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.09404664,
+                            y: 1,
+                            z: 0.99012715,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Red),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.29246488,
+                            y: 1,
+                            z: -0.6117403,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(White),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.35666838,
+                            y: 1,
+                            z: -0.71247375,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Foliage),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.53976136,
+                            y: 1,
+                            z: 0.5009276,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(LightSkin),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Emitter((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.3540862,
+                            y: 1,
+                            z: -0.06143888,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [],
+                ),
+                emission: Color(White),
+                tag: "Sphere 4",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.50710845,
+                            y: 1,
+                            z: -0.6770164,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Green),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.02720935,
+                            y: 1,
+                            z: -0.39339304,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Yellow),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.061411772,
+                            y: 1,
+                            z: -0.5352657,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Grey1),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.7092744,
+                            y: 1,
+                            z: -0.36477786,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Magenta),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.08620576,
+                            y: 1,
+                            z: -0.0019433397,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Orange),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.85083395,
+                            y: 1,
+                            z: -0.38474807,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "FresnelSpecular": (
+                                r: Color(White),
+                                t: Color(White),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Glass,
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.10297952,
+                            y: 1,
+                            z: 0.6321009,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Grey1),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.36588567,
+                            y: 1,
+                            z: -0.6746435,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Green),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.72319645,
+                            y: 1,
+                            z: -0.33227968,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(BlueFlower),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.44860736,
+                            y: 1,
+                            z: -0.20618232,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(White),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.56902486,
+                            y: 1,
+                            z: 0.27769938,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Yellow),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.30721352,
+                            y: 1,
+                            z: 0.34217814,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Cyan),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.37067267,
+                            y: 1,
+                            z: -0.4945253,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(DarkSkin),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.68086517,
+                            y: 1,
+                            z: 0.6213464,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "FresnelSpecular": (
+                                r: Color(White),
+                                t: Color(White),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Glass,
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Emitter((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.7935413,
+                            y: 1,
+                            z: -0.3307815,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [],
+                ),
+                emission: Color(White),
+                tag: "Sphere 19",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.82099605,
+                            y: 1,
+                            z: 0.5241236,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Blue),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.6544396,
+                            y: 1,
+                            z: 0.40988386,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(DarkSkin),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.68219244,
+                            y: 1,
+                            z: -0.3894602,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Grey4),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.48333955,
+                            y: 1,
+                            z: -0.58999115,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Cyan),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.8971903,
+                            y: 1,
+                            z: 0.18127145,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Purple),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.43056014,
+                            y: 1,
+                            z: 0.1418627,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "SpecularReflection": (
+                                r: Color(White),
+                                fresnel: Dielectric((
+                                    eta_i: Air,
+                                    eta_t: Glass,
+                                )),
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.6315558,
+                            y: 1,
+                            z: -0.4258681,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Blue),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Emitter((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.6052134,
+                            y: 1,
+                            z: 0.3909937,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [],
+                ),
+                emission: Color(White),
+                tag: "Sphere 27",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0.787617,
+                            y: 1,
+                            z: 0.14399315,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Grey1),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.38941172,
+                            y: 1,
+                            z: 0.50903535,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(Foliage),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.9303828,
+                            y: 1,
+                            z: -0.21413471,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(BlueFlower),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -0.020859815,
+                            y: 1,
+                            z: -0.43259138,
+                        ),
+                        radius: 1,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "OrenNayar": (
+                                r: Color(ModerateRed),
+                                a: 0.99992615,
+                                b: 0.00024356201,
+                            ),
+                        },
+                    ],
+                ),
+                tag: "",
+            )),
+            Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0,
+                            y: 0,
+                            z: 0,
+                        ),
+                        radius: 1000,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "LambertianReflection": (
+                                r: Color(BlueSky),
+                            ),
+                        },
+                    ],
+                ),
+                tag: "sky",
+            )),
+            Emitter((
+                geometry: {
+                    "Point": ((
+                        x: 100,
+                        y: 100,
+                        z: -30,
+                    )),
+                },
+                bsdf: (
+                    bxdfs: [],
+                ),
+                emission: Color(White),
+                tag: "sun",
+            )),
+        ],
+    ),
+)

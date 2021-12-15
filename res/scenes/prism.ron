@@ -1,12 +1,12 @@
-Config (
+(
     config: (
-        output: "prism",
-        passes: 5000000,
+        output: "lprism",
+        passes: 1000000,
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
-            sampler: Random,
+        "NaiveCamera": (
+            sampler: Const(0.5, 0.5),
             eye: (
                 x: 0,
                 y: 0,
@@ -14,7 +14,7 @@ Config (
             ),
             target: (
                 x: 0,
-                y: 0,
+                y: -1.5,
                 z: 0,
             ),
             up: (
@@ -22,12 +22,12 @@ Config (
                 y: 1,
                 z: 0,
             ),
-            fov: 70,
+            fov: 20,
             resolution: (
-                x: 1024,
-                y: 1024,
+                x: 384,
+                y: 192,
             ),
-        )),
+        ),
     },
     integrator: {
         "SpectralPath": (
@@ -57,10 +57,8 @@ Config (
                 bsdf: (
                     bxdfs: [
                         {
-                            "OrenNayar": (
+                            "LambertianReflection": (
                                 r: Color(White),
-                                a: 0.86516786,
-                                b: 0.25882423,
                             ),
                         },
                     ],
@@ -85,10 +83,8 @@ Config (
                 bsdf: (
                     bxdfs: [
                         {
-                            "OrenNayar": (
+                            "LambertianReflection": (
                                 r: Color(Red),
-                                a: 0.86516786,
-                                b: 0.25882423,
                             ),
                         },
                     ],
@@ -112,10 +108,8 @@ Config (
                 bsdf: (
                     bxdfs: [
                         {
-                            "OrenNayar": (
+                            "LambertianReflection": (
                                 r: Color(White),
-                                a: 0.86516786,
-                                b: 0.25882423,
                             ),
                         },
                     ],
@@ -139,10 +133,8 @@ Config (
                 bsdf: (
                     bxdfs: [
                         {
-                            "OrenNayar": (
+                            "LambertianReflection": (
                                 r: Color(Green),
-                                a: 0.86516786,
-                                b: 0.25882423,
                             ),
                         },
                     ],
@@ -166,10 +158,8 @@ Config (
                 bsdf: (
                     bxdfs: [
                         {
-                            "OrenNayar": (
+                            "LambertianReflection": (
                                 r: Color(White),
-                                a: 0.86516786,
-                                b: 0.25882423,
                             ),
                         },
                     ],
@@ -180,21 +170,14 @@ Config (
                     "Mesh": Config((
                         path: "./res/meshes/prism.obj",
                         scale: Some((
-                            x: 0.75,
-                            y: 0.75,
-                            z: 0.5,
-                        )),
-                        rotation: Some((
-                            mat: (
-                                x: (x: 0, y:0, z:1),
-                                y: (x: 0, y:1, z:0),
-                                z: (x:-1, y:0, z:0),
-                            )
+                            x: 1.5,
+                            y: 1,
+                            z: 1,
                         )),
                         translation: Some((
-                            x: 0.0625,
-                            y: -0.25,
-                            z: 0.75,
+                            x: -1,
+                            y: -1.9999,
+                            z: -0.5,
                         )),
                         shading_mode: Flat,
                     )),
@@ -207,7 +190,7 @@ Config (
                                 t: Color(White),
                                 fresnel: (
                                     eta_i: Air,
-                                    eta_t: Linear(1.2, 1.7),
+                                    eta_t: Linear(1.8, 1.2),
                                 ),
                             ),
                         },
@@ -218,14 +201,14 @@ Config (
                 geometry: {
                     "Sphere": (
                         center: (
-                            x: -0.5,
-                            y: 0.5,
-                            z: -0.5,
+                            x: -1.25,
+                            y: -1.75,
+                            z: 0,
                         ),
-                        radius: 0.5,
+                        radius: 0.0125,
                     ),
                 },
-                emission: MulColor(4, White),
+                emission: MulColor(1000, White),
             )),
         ],
     ),

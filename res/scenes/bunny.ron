@@ -1,11 +1,11 @@
-Config (
+(
     config: (
-        output: "bunny2",
-        passes: 5000000,
+        output: "bunny3",
+        passes: 100000,
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "NaiveCamera": (
             sampler: Random,
             eye: (
                 x: 0,
@@ -24,10 +24,10 @@ Config (
             ),
             fov: 70,
             resolution: (
-                x: 1024,
-                y: 1024,
+                x: 512,
+                y: 512,
             ),
-        )),
+        ),
     },
     integrator: {
         "SpectralPath": (
@@ -189,7 +189,7 @@ Config (
                             y: -1.8979,
                             z: 0.03073899999999996,
                         )),
-                        shading_mode: Flat,
+                        shading_mode: Phong,
                     )),
                 },
                 bsdf: (
@@ -200,7 +200,7 @@ Config (
                                 t: Color(White),
                                 fresnel: (
                                     eta_i: Air,
-                                    eta_t: Linear(1.5, 2.0),
+                                    eta_t: Glass,
                                 ),
                             ),
                         },
@@ -211,9 +211,9 @@ Config (
                 geometry: {
                     "Sphere": (
                         center: (
-                            x: -0.5,
-                            y: 0.5,
-                            z: -0.5,
+                            x: -1,
+                            y: 1,
+                            z: -1,
                         ),
                         radius: 0.5,
                     ),

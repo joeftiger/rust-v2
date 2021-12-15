@@ -1,4 +1,4 @@
-Config (
+(
     config: (
         output: "dummy",
         passes: 1,

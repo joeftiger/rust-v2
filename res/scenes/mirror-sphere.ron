@@ -1,11 +1,11 @@
-Config (
+(
     config: (
         output: "mirror-sphere",
         passes: 16384,
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "NaiveCamera": (
             sampler: Random,
             eye: (
                 x: 0,
@@ -27,7 +27,7 @@ Config (
                 x: 1024,
                 y: 1024,
             ),
-        )),
+        ),
     },
     integrator: {
         // "SpectralPath": (

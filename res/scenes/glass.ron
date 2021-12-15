@@ -1,11 +1,11 @@
-Config (
+(
     config: (
-        output: "glass",
+        output: "glass-xyz",
         passes: 100000,
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "NaiveCamera": (
             sampler: Random,
             eye: (
                 x: 0,
@@ -27,7 +27,7 @@ Config (
                 x: 256,
                 y: 1024,
             ),
-        )),
+        ),
     },
     integrator: {
         "SpectralPath": (
