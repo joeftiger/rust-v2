@@ -82,6 +82,49 @@ impl Scene {
     }
 }
 
+pub struct SceneBuilder {
+    objects: Vec<SceneObject>,
+}
+
+impl SceneBuilder {
+    pub fn new() -> Self {
+        Self {
+            objects: Vec::new(),
+        }
+    }
+
+    pub fn add(mut self, obj: SceneObject) -> Self {
+        self.objects.push(obj);
+        self
+    }
+
+    pub fn append(mut self, mut objs: Vec<SceneObject>) -> Self {
+        self.objects.append(&mut objs);
+        self
+    }
+
+    pub fn build(self) -> Scene {
+        let emitters = self
+            .objects
+            .iter()
+            .enumerate()
+            .filter_map(|(i, o)| match o {
+                SceneObject::Emitter(_) => Some(i as u32),
+                SceneObject::Receiver(_) => None,
+            })
+            .collect();
+
+        let mut scene = Scene {
+            emitters,
+            objects: self.objects,
+            bvh: Default::default(),
+        };
+        scene.build_tree();
+
+        scene
+    }
+}
+
 #[typetag::serde]
 impl Geometry for Scene {
     #[inline(always)]
@@ -138,20 +181,7 @@ struct SceneData {
 }
 impl From<SceneData> for Scene {
     fn from(data: SceneData) -> Self {
-        let emitters = data
-            .objects
-            .iter()
-            .enumerate()
-            .filter_map(|(i, o)| if o.emitter() { Some(i as u32) } else { None })
-            .collect();
-
-        let mut scene = Scene {
-            emitters,
-            objects: data.objects,
-            bvh: Default::default(),
-        };
-        scene.build_tree();
-        scene
+        SceneBuilder::new().append(data.objects).build()
     }
 }
 impl From<Scene> for SceneData {
