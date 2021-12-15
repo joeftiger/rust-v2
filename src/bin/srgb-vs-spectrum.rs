@@ -1,8 +1,8 @@
 use image::Rgb;
-use show_image::{create_window, ImageInfo, ImageView, WindowOptions};
-use show_image::event::{VirtualKeyCode, WindowEvent};
 use rust_v2::color::{Color, Srgb};
 use rust_v2::Spectrum;
+use show_image::event::{VirtualKeyCode, WindowEvent};
+use show_image::{create_window, ImageInfo, ImageView, WindowOptions};
 
 #[show_image::main]
 fn main() -> Result<(), Box<dyn std::error::Error>> {

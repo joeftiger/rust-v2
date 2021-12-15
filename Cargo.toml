@@ -2,11 +2,12 @@
 name = "rust-v2"
 version = "0.1.0"
 edition = "2018"
+resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.130", features = ["derive", "rc"] }
+serde = { version = "1.0.131", features = ["derive", "rc"] }
 serde-big-array = "0.3.2"
 typetag = "0.1.8"
 ron = "0.7.0"
@@ -21,15 +22,15 @@ cgmath = { version = "0.18.0", features = ["serde"] }
 crossbeam-channel = "0.5.1"
 parking_lot = { version = "0.11.2", features = ["serde"] }
 num_cpus = "1.13.0"
-signal-hook = "0.3.10"
+signal-hook = "0.3.12"
 
-# show-image = { version = "0.10.0", features = ["image", "save"], optional = true }
+show-image = { version = "0.10.1", features = ["image", "save"], optional = true }
 
 log = "0.4.14"
 env_logger = "0.9.0"
 
 itertools = "0.10.3"
-poloto = "3.6.5"
+poloto = "3.11.0"
 
 [features]
 default = ["spectral"]
