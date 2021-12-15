@@ -15,6 +15,12 @@ pub struct Path {
     direct_illum: DirectIllumination,
 }
 
+impl Path {
+    pub fn new(max_depth: u32, sampler: FloatSampler, direct_illum: DirectIllumination) -> Self {
+        Self { max_depth, sampler, direct_illum }
+    }
+}
+
 #[typetag::serde]
 impl Integrator for Path {
     fn integrate(&self, scene: &Scene, primary_ray: Ray, pixel: &mut Pixel) {

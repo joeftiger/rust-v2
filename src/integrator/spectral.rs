@@ -18,6 +18,20 @@ pub struct SpectralPath {
 }
 
 impl SpectralPath {
+    pub fn new(
+        max_depth: u32,
+        sampler: FloatSampler,
+        spectral_sampler: SpectralSampler,
+        direct_illum: DirectIllumination,
+    ) -> Self {
+        Self {
+            max_depth,
+            sampler,
+            spectral_sampler,
+            direct_illum,
+        }
+    }
+
     fn trace_single<'a>(
         &self,
         scene: &'a Scene,

@@ -15,6 +15,12 @@ pub struct SpectralSingle {
     direct_illum: DirectIllumination,
 }
 
+impl SpectralSingle {
+    pub fn new(max_depth: u32, sampler: FloatSampler, spectral_sampler: SpectralSampler, direct_illum: DirectIllumination) -> Self {
+        Self { max_depth, sampler, spectral_sampler, direct_illum }
+    }
+}
+
 #[typetag::serde]
 impl Integrator for SpectralSingle {
     fn integrate(&self, scene: &Scene, primary_ray: Ray, pixel: &mut Pixel) {
