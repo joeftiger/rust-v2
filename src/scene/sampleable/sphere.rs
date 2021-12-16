@@ -11,8 +11,9 @@ use std::f64::consts::TAU;
 fn sample_surface_inside(sphere: &Sphere, sample: Vec2) -> SurfaceSample {
     let normal = sample_unit_sphere(sample);
     let point = sphere.center + sphere.radius * normal;
+    let pdf = 1.0 / sphere.surface_area();
 
-    SurfaceSample::new(point, normal)
+    SurfaceSample::new(point, normal, pdf)
 }
 
 #[typetag::serde]
@@ -63,8 +64,9 @@ impl Sampleable for Sphere {
             /* end PBR code */
 
             let point = self.center + self.radius * normal;
+            let pdf = uniform_cone_pdf(cos_theta_max);
 
-            SurfaceSample::new(point, normal)
+            SurfaceSample::new(point, normal, pdf)
         }
     }
 }

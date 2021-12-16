@@ -96,7 +96,10 @@ impl DirectIllumination {
         {
             let emitter_sample = emitter.sample(hit.i.point, sampler.vec2());
 
-            if !emitter_sample.radiance.is_black() && emitter_sample.occlusion.unoccluded(scene) {
+            if emitter_sample.pdf > 0.0
+                && !emitter_sample.radiance.is_black()
+                && emitter_sample.occlusion.unoccluded(scene)
+            {
                 let spectrum = bsdf.evaluate(
                     hit.i.normal,
                     emitter_sample.incident,
@@ -109,7 +112,8 @@ impl DirectIllumination {
                     let cos = emitter_sample.incident.dot(hit.i.normal);
 
                     if cos != 0.0 {
-                        illum += spectrum * emitter_sample.radiance * cos.abs()
+                        illum +=
+                            spectrum * emitter_sample.radiance * (cos.abs() / emitter_sample.pdf)
                     }
                 }
             }
@@ -141,7 +145,10 @@ impl DirectIllumination {
         {
             let emitter_sample = emitter.sample_packet(hit.i.point, sampler.vec2(), indices);
 
-            if !emitter_sample.radiance.is_black() && emitter_sample.occlusion.unoccluded(scene) {
+            if emitter_sample.pdf > 0.0
+                && !emitter_sample.radiance.is_black()
+                && emitter_sample.occlusion.unoccluded(scene)
+            {
                 let spectrum = bsdf.evaluate_packet(
                     hit.i.normal,
                     emitter_sample.incident,
@@ -155,7 +162,9 @@ impl DirectIllumination {
                     let cos = emitter_sample.incident.dot(hit.i.normal);
 
                     if cos != 0.0 {
-                        let rhs = spectrum.mul(emitter_sample.radiance).mul_t(cos.abs());
+                        let rhs = spectrum
+                            .mul(emitter_sample.radiance)
+                            .mul_t(cos.abs() / emitter_sample.pdf);
                         illum.add_assign(rhs)
                     }
                 }
@@ -188,7 +197,10 @@ impl DirectIllumination {
         {
             let emitter_sample = emitter.sample_lambda(hit.i.point, sampler.vec2(), index);
 
-            if emitter_sample.radiance != 0.0 && emitter_sample.occlusion.unoccluded(scene) {
+            if emitter_sample.pdf > 0.0
+                && emitter_sample.radiance != 0.0
+                && emitter_sample.occlusion.unoccluded(scene)
+            {
                 let spectrum = bsdf.evaluate_lambda(
                     hit.i.normal,
                     emitter_sample.incident,
@@ -203,7 +215,8 @@ impl DirectIllumination {
                     let cos = emitter_sample.incident.dot(hit.i.normal);
 
                     if cos != 0.0 {
-                        illum += spectrum * emitter_sample.radiance * cos.abs()
+                        illum +=
+                            spectrum * emitter_sample.radiance * (cos.abs() / emitter_sample.pdf)
                     }
                 }
             }

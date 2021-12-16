@@ -16,18 +16,8 @@ pub struct SpectralSingle {
 }
 
 impl SpectralSingle {
-    pub fn new(
-        max_depth: u32,
-        sampler: FloatSampler,
-        spectral_sampler: SpectralSampler,
-        direct_illum: DirectIllumination,
-    ) -> Self {
-        Self {
-            max_depth,
-            sampler,
-            spectral_sampler,
-            direct_illum,
-        }
+    pub fn new(max_depth: u32, sampler: FloatSampler, spectral_sampler: SpectralSampler, direct_illum: DirectIllumination) -> Self {
+        Self { max_depth, sampler, spectral_sampler, direct_illum }
     }
 }
 
