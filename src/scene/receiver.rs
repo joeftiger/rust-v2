@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Receiver {
     geometry: Box<dyn Geometry>,
     #[serde(default)]
+    #[serde(skip_serializing_if = "BSDF::is_empty")]
     pub bsdf: BSDF,
     #[serde(default)]
     #[serde(skip_serializing_if = "String::is_empty")]

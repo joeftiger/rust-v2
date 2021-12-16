@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 pub struct Emitter {
     geometry: Box<dyn Sampleable>,
     #[serde(default)]
+    #[serde(skip_serializing_if = "BSDF::is_empty")]
     pub bsdf: BSDF,
     pub emission: Spectrum,
     #[serde(default)]
