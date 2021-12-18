@@ -196,7 +196,7 @@ impl Runtime {
         log::info!(target: "Loading Runtime", "Trying to load checkpoint...");
 
         match fs::read(path) {
-            Ok(ser) => return Some(Self::deserialize_checkpoint(&ser)),
+            Ok(ser) => return Some(Self::deserialize_checkpoint(ser)),
             Err(e) => log::error!(target: "Loading Runtime", "unable to read checkpoint: {}", e),
         }
 
@@ -260,13 +260,13 @@ impl Runtime {
     }
 
     #[cold]
-    pub fn deserialize_checkpoint(bytes: &[u8]) -> Self {
-        match decompress_size_prepended(bytes) {
-            Ok(binary) => bincode::deserialize::<RuntimeSerde>(&binary)
+    pub fn deserialize_checkpoint(bytes: Vec<u8>) -> Self {
+        match decompress_size_prepended(&bytes) {
+            Ok(binary) => ron::from_str::<RuntimeSerde>(&String::from_utf8(binary).unwrap())
                 .map_err(|e| log::error!(target: "Runtime", "unable to deserialize compressed checkpoint: {}", e))
                 .unwrap()
                 .into(),
-            Err(_) => bincode::deserialize::<RuntimeSerde>(bytes)
+            Err(_) => ron::from_str::<RuntimeSerde>(&String::from_utf8(bytes).unwrap())
                 .map_err(|e| log::error!(target: "Runtime", "unable to deserialize uncompressed checkpoint: {}", e))
                 .unwrap()
                 .into(),
@@ -275,10 +275,10 @@ impl Runtime {
 
     #[cold]
     pub fn serialize_checkpoint(&self) -> Vec<u8> {
-        let binary = bincode::serialize(&RuntimeSerde::from(self))
+        let binary = ron::ser::to_string_pretty(&RuntimeSerde::from(self), Default::default())
             .map_err(|e| log::error!(target: "Runtime", "unable to serialize checkpoint: {}", e))
             .unwrap();
-        compress_prepend_size(&binary)
+        compress_prepend_size(binary.as_bytes())
     }
 }
 
@@ -291,10 +291,10 @@ pub struct RuntimeSerde {
 impl RuntimeSerde {
     pub fn save_to<P: AsRef<Path>>(&self, path: P) {
         log::info!(target: "Runtime", "saving checkpoint...");
-        let binary = bincode::serialize(self)
+        let serde = ron::ser::to_string_pretty(self, Default::default())
             .map_err(|e| log::error!(target: "Runtime", "unable to serialize checkpoint: {}", e))
             .unwrap();
-        let compressed = compress_prepend_size(&binary);
+        let compressed = compress_prepend_size(serde.as_bytes());
 
         fs::write(path, compressed)
             .map_err(

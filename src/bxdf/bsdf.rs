@@ -4,8 +4,8 @@ use crate::{Float, Spectrum, Vec3, PACKET_SIZE};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct BSDF {
-    #[serde(default)]
     bxdfs: Vec<Box<dyn BxDF>>,
 }
 
@@ -15,7 +15,7 @@ impl BSDF {
     }
 
     pub fn empty() -> Self {
-        Self::new(Vec::new())
+        Self::new(Vec::with_capacity(0))
     }
 
     pub fn size(&self) -> usize {

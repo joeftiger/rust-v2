@@ -14,8 +14,9 @@ use rust_v2::color::Color;
 use rust_v2::config::Config;
 use rust_v2::geometry::{Point, Sphere};
 use rust_v2::integrator::{DirectIllumination, Integrator, SpectralPath};
-use rust_v2::renderer::RendererData;
+use rust_v2::renderer::{Renderer, RendererData};
 
+use rust_v2::runtime::Runtime;
 use rust_v2::sampler::{CameraSampler, FloatSampler, SpectralSampler};
 use rust_v2::scene::{Emitter, Receiver, SceneBuilder, SceneData, SceneObject};
 use rust_v2::util::mc::sample_unit_disk_concentric;
@@ -23,7 +24,7 @@ use rust_v2::{Float, UVec2, Vec3};
 
 const PASSES: usize = 60000;
 const FOV: Float = 70.0;
-const RESOLUTION: UVec2 = UVec2::new(512, 512);
+const RESOLUTION: UVec2 = UVec2::new(16, 16);
 
 const SPHERES: usize = 32;
 const SPREAD: Float = 16.0;
@@ -38,9 +39,11 @@ fn main() {
     let scene = scene();
 
     let data = RendererData::new(config, camera, None, integrator, scene);
+    let renderer = Renderer::from(data);
 
-    let ron = ron::ser::to_string_pretty(&data, PrettyConfig::default()).unwrap();
-    std::fs::write("./spheres.ron", ron).unwrap();
+    let ron = ron::ser::to_string_pretty(&renderer, PrettyConfig::default()).unwrap();
+    std::fs::write("./pretty.ron", ron).unwrap();
+    let _ = Runtime::load("./pretty.ron").unwrap();
 }
 
 fn config() -> Config {

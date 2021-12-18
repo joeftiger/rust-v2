@@ -91,7 +91,7 @@ pub struct RendererDataRef<'a> {
     camera: &'a dyn Camera,
     sensor: Option<&'a Sensor>,
     integrator: &'a dyn Integrator,
-    scene_data: SceneDataRef<'a>,
+    scene: SceneDataRef<'a>,
 }
 impl<'a> From<&'a Renderer> for RendererDataRef<'a> {
     fn from(r: &'a Renderer) -> Self {
@@ -100,7 +100,7 @@ impl<'a> From<&'a Renderer> for RendererDataRef<'a> {
             camera: &*r.camera,
             sensor: Some(&r.sensor),
             integrator: &*r.integrator,
-            scene_data: (&r.scene).into(),
+            scene: (&r.scene).into(),
         }
     }
 }

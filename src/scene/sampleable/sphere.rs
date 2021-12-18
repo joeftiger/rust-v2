@@ -1,6 +1,6 @@
 use crate::geometry::{spherical_to_cartesian_frame_trig, CoordinateSystem, Sphere};
 use crate::scene::{Sampleable, SurfaceSample};
-use crate::util::mc::sample_unit_sphere;
+use crate::util::mc::{sample_unit_sphere, uniform_cone_pdf};
 use crate::{Float, Vec2, Vec3};
 use cgmath::InnerSpace;
 #[cfg(not(feature = "f64"))]
