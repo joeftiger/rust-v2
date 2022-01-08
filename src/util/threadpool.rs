@@ -91,16 +91,19 @@ impl Builder {
         }
     }
 
+    #[must_use]
     pub fn with_bound(mut self, max_num_tasks: Option<usize>) -> Self {
         self.max_num_tasks = max_num_tasks;
         self
     }
 
+    #[must_use]
     pub fn with_on_terminate(mut self, on_terminate: Option<Box<dyn Fn()>>) -> Self {
         self.on_terminate = on_terminate;
         self
     }
 
+    #[must_use]
     pub fn build(self) -> Threadpool {
         Threadpool::new(self.num_workers, self.max_num_tasks, self.on_terminate)
     }

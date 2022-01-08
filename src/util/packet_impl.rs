@@ -2,20 +2,28 @@ use crate::{Float, PACKET_SIZE};
 
 /// A utility trait allowing implementation of add, sub, mul, div, etc. for `[Float; `[PACKET_SIZE]`]`.
 pub trait PacketOps<T> {
+    #[must_use]
     fn add(self, rhs: Self) -> Self;
     fn add_assign(&mut self, rhs: Self);
+    #[must_use]
     fn sub(self, rhs: Self) -> Self;
     fn sub_assign(&mut self, rhs: Self);
+    #[must_use]
     fn mul(self, rhs: Self) -> Self;
     fn mul_assign(&mut self, rhs: Self);
+    #[must_use]
     fn mul_t(self, rhs: T) -> Self;
     fn mul_assign_t(&mut self, rhs: T);
+    #[must_use]
     fn div(self, rhs: Self) -> Self;
     fn div_assign(&mut self, rhs: Self);
+    #[must_use]
     fn div_t(self, rhs: T) -> Self;
     fn div_assign_t(&mut self, rhs: T);
+    #[must_use]
     fn neg(self) -> Self;
     fn neg_assign(&mut self);
+    #[must_use]
     fn is_black(&self) -> bool;
 }
 

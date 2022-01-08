@@ -176,6 +176,7 @@ macro_rules! color {
             ///
             /// assert_eq!([0.25, 0.5, 0.75], clamped[..]);
             /// ```
+            #[must_use]
             pub fn clamped(&self, min: $t, max: $t) -> Self {
                 let mut new = self.clone();
                 new.clamp(min, max);
@@ -190,6 +191,7 @@ macro_rules! color {
             }
 
             /// Clamps this color between two others and returns it
+            #[must_use]
             pub fn clamped2(&self, min: Self, max: Self) -> Self {
                 let mut new = self.clone();
                 new.clamp2(min, max);
@@ -202,6 +204,7 @@ macro_rules! color {
                 }
             }
 
+            #[must_use]
             pub fn sqrted(&self) -> Self {
                 let mut new = self.clone();
                 new.sqrt();
@@ -214,6 +217,7 @@ macro_rules! color {
                 }
             }
 
+            #[must_use]
             pub fn lerped(&self, other: &Self, t: $t) -> Self {
                 let mut new = self.clone();
                 new.lerp(other, t);

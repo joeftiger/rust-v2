@@ -32,6 +32,7 @@ pub enum Rotation {
 
 impl Rotation {
     #[inline]
+    #[must_use]
     pub fn invert(self) -> Self {
         match self {
             Self::Some(r) => Self::Some(r.invert()),

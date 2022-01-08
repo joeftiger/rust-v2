@@ -1,5 +1,4 @@
 use crate::geometry::{Geometry, Intersection, Ray};
-use crate::util::floats;
 use crate::{Float, Vec3};
 use cgmath::{Bounded, ElementWise, InnerSpace};
 use serde::{Deserialize, Serialize};
@@ -87,6 +86,7 @@ impl Aabb {
     ///
     /// # Returns
     /// * The outer join
+    #[must_use]
     pub fn join(&self, other: Self) -> Self {
         let min = self.min.zip(other.min, |a, b| a.min(b));
         let max = self.max.zip(other.max, |a, b| a.max(b));
@@ -100,6 +100,7 @@ impl Aabb {
     ///
     /// # Returns
     /// * The outer join
+    #[must_use]
     pub fn join2(&self, other: Vec3) -> Self {
         let min = self.min.zip(other, |a, b| a.min(b));
         let max = self.max.zip(other, |a, b| a.max(b));

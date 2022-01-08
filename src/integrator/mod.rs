@@ -94,8 +94,7 @@ impl DirectIllumination {
         let emitter_indices = self.emitter_indices(scene, sampler.float());
         for emitter in emitter_indices
             .iter()
-            .map(|&i| scene.get_emitter(i as usize))
-            .flatten()
+            .filter_map(|&i| scene.get_emitter(i as usize))
         {
             let emitter_sample = emitter.sample(hit.i.point, sampler.vec2());
 
@@ -143,8 +142,7 @@ impl DirectIllumination {
         let emitter_indices = self.emitter_indices(scene, sampler.float());
         for emitter in emitter_indices
             .iter()
-            .map(|&i| scene.get_emitter(i as usize))
-            .flatten()
+            .filter_map(|&i| scene.get_emitter(i as usize))
         {
             let emitter_sample = emitter.sample_packet(hit.i.point, sampler.vec2(), indices);
 
@@ -195,8 +193,7 @@ impl DirectIllumination {
         let emitter_indices = self.emitter_indices(scene, sampler.float());
         for emitter in emitter_indices
             .iter()
-            .map(|&i| scene.get_emitter(i as usize))
-            .flatten()
+            .filter_map(|&i| scene.get_emitter(i as usize))
         {
             let emitter_sample = emitter.sample_lambda(hit.i.point, sampler.vec2(), index);
 

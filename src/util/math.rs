@@ -3,12 +3,14 @@ use crate::Float;
 
 pub trait Lerp {
     /// Lerps `start` to `end` by `self`.
+    #[must_use]
     fn lerp(self, start: Self, end: Self) -> Self;
 }
 
 macro_rules! impl_lerp {
     ($($t:ident),+) => {$(
         impl Lerp for $t {
+            #[must_use]
             fn lerp(self, start: Self, end: Self) -> Self {
                 // consistent
                 if start == end {
