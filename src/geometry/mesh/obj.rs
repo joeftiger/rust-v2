@@ -1,8 +1,8 @@
 use super::Face;
 use crate::{Float, Vec3};
 use core::str::SplitWhitespace;
-use std::fs;
 use lz4_flex::decompress_size_prepended;
+use std::fs;
 
 pub struct ObjFile {
     pub vertices: Vec<Vec3>,
