@@ -59,6 +59,12 @@ impl Sensor {
         Self { resolution, tiles }
     }
 
+    pub fn reset(&mut self) {
+        for t in &self.tiles {
+            t.lock().pixels.iter_mut().for_each(Pixel::reset);
+        }
+    }
+
     pub fn num_tiles(&self) -> usize {
         self.tiles.len()
     }

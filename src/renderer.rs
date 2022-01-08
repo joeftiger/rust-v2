@@ -12,8 +12,7 @@ use serde::{Deserialize, Serialize, Serializer};
 pub struct Renderer {
     pub config: Config,
     pub camera: Box<dyn Camera>,
-    // TODO: remove pub
-    sensor: Sensor,
+    pub sensor: Sensor,
     pub integrator: Box<dyn Integrator>,
     #[serde(default)]
     pub scene: Scene,
@@ -36,8 +35,8 @@ impl Renderer {
         }
     }
 
-    pub fn sensor(&self) -> &Sensor {
-        &self.sensor
+    pub fn reset(&mut self) {
+        self.sensor.reset();
     }
 
     pub fn integrate(&self, index: usize) {

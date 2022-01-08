@@ -26,6 +26,11 @@ impl Pixel {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.samples.data.iter_mut().for_each(|s| *s = 0);
+        self.average.data.iter_mut().for_each(|a| *a = 0.0);
+    }
+
     pub fn add_none(&mut self) {
         let avg = self.average * self.samples;
         self.samples.inc_all();
