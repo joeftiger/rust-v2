@@ -21,10 +21,18 @@ pub struct Runtime {
 }
 
 impl Runtime {
+    // #[cold]
+    // #[inline(never)]
+    // pub fn reset(&mut self) {
+    //     self.tile_progress.store(0, Ordering::SeqCst);
+    //     self.cancel.store(false, Ordering::SeqCst);
+    //     unsafe { Arc::get_mut_unchecked(&mut self.renderer).reset(); }
+    // }
+
     #[cold]
     pub fn new(renderer: Arc<Renderer>, tile_progress: Option<Arc<AtomicUsize>>) -> Self {
         let tile_progress = tile_progress.unwrap_or_else(|| Arc::new(AtomicUsize::new(0)));
-        let tiles = renderer.sensor().num_tiles();
+        let tiles = renderer.sensor.num_tiles();
         let passes = renderer.config.passes;
         let total_tiles = tiles * passes;
         let cancel = Arc::new(AtomicBool::new(false));
@@ -207,18 +215,16 @@ impl Runtime {
         let num_jobs = (frames * self.tiles).min(self.total_tiles - progress);
         log::trace!(target: "Runtime", "continuing from frame {} with {} jobs", progress / self.tiles, num_jobs);
 
-        let threadpool = Threadpool::new(self.threadpool.workers(), None, None);
+        self.threadpool.force_restart();
         let tiles = self.tiles;
         for _ in 0..num_jobs {
             let r = Arc::clone(&self.renderer);
             let p = self.tile_progress.clone();
-            threadpool.execute(move || {
+            self.threadpool.execute(move || {
                 let index = p.fetch_add(1, Ordering::SeqCst) % tiles;
                 r.integrate(index);
             });
         }
-
-        threadpool.join();
     }
 
     pub fn run(&self) {
