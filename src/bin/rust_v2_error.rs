@@ -45,13 +45,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         let runtime_name = runtime.renderer.config.output.as_str();
         log::info!(target: "Rust-V2-Error", "calculating error for scene: {}", runtime_name);
 
-        let num_steps = runtime.passes.unstable_div_ceil(frames);
+        let num_steps = runtime.passes.div_ceil(frames);
         let x_range = 0..=num_steps;
 
+        runtime.run_frames(frames);
         while !runtime.done() {
-            runtime.run_frames(frames);
-
+            runtime.join_threadpool();
             let current = runtime.renderer.get_image();
+            runtime.run_frames(frames);
 
             ErrorType::variants()
                 .iter_mut()
@@ -114,33 +115,43 @@ enum ErrorType {
     PSNR,
     /// Structural Similarity Index Measure
     SSIM,
+    /// Variance
+    VAR,
 }
 
 #[allow(dead_code)]
 impl ErrorType {
     pub const fn num_types() -> usize {
-        5
+        6
     }
 
     pub const fn variants() -> [Self; Self::num_types()] {
-        [Self::MSE, Self::PSE, Self::SNR, Self::PSNR, Self::SSIM]
+        [
+            Self::MSE,
+            Self::PSE,
+            Self::SNR,
+            Self::PSNR,
+            Self::SSIM,
+            Self::VAR,
+        ]
     }
 
     pub const fn y_label(&self) -> &str {
         match self {
-            ErrorType::MSE | ErrorType::PSE => "error",
-            ErrorType::SNR | ErrorType::PSNR => "ratio (dB)",
-            ErrorType::SSIM => "similarity",
+            Self::MSE | Self::PSE | Self::VAR => "error",
+            Self::SNR | Self::PSNR => "ratio (dB)",
+            Self::SSIM => "similarity",
         }
     }
 
     fn calc(&self, original: &Rgb16Image, current: &Rgb16Image) -> f64 {
         match self {
-            ErrorType::MSE => Self::mse(original, current),
-            ErrorType::PSE => Self::pse(original, current),
-            ErrorType::SNR => Self::snr(original, current),
-            ErrorType::PSNR => Self::psnr(original, current),
-            ErrorType::SSIM => Self::ssim(original, current),
+            Self::MSE => Self::mse(original, current),
+            Self::PSE => Self::pse(original, current),
+            Self::SNR => Self::snr(original, current),
+            Self::PSNR => Self::psnr(original, current),
+            Self::SSIM => Self::ssim(original, current),
+            Self::VAR => Self::var(original, current),
         }
     }
 
@@ -170,7 +181,8 @@ impl ErrorType {
     }
 
     fn psnr(original: &Rgb16Image, current: &Rgb16Image) -> f64 {
-        20.0 * f64::log10(u16::MAX as f64) - 10.0 * f64::log10(Self::mse(original, current))
+        const A: f64 = 96.32946607530499; // 20.0 * f64::log10(u16::MAX as f64)
+        A - 10.0 * f64::log10(Self::mse(original, current))
     }
 
     fn ssim(original: &Rgb16Image, current: &Rgb16Image) -> f64 {
@@ -192,16 +204,23 @@ impl ErrorType {
         (2.0 * mu_x * mu_y + c1) * (2.0 * sigma_xy + c2)
             / ((mu_x.powi(2) + mu_y.powi(2) + c1) * (sigma2_x + sigma2_y + c2))
     }
+
+    fn var(original: &Rgb16Image, current: &Rgb16Image) -> f64 {
+        let diff = diff(original, current);
+        let mu = average(&diff);
+        variance(&diff, mu)
+    }
 }
 
 impl ToString for ErrorType {
     fn to_string(&self) -> String {
         match self {
-            ErrorType::MSE => "MSE".into(),
-            ErrorType::PSE => "PSE".into(),
-            ErrorType::SNR => "SNR".into(),
-            ErrorType::PSNR => "PSNR".into(),
-            ErrorType::SSIM => "SSIM".into(),
+            Self::MSE => "MSE".into(),
+            Self::PSE => "PSE".into(),
+            Self::SNR => "SNR".into(),
+            Self::PSNR => "PSNR".into(),
+            Self::SSIM => "SSIM".into(),
+            Self::VAR => "Variance".into(),
         }
     }
 }
@@ -227,6 +246,11 @@ mod util {
 
     pub fn average(x: &[Vector3<f64>]) -> f64 {
         x.iter().map(|v| v.magnitude()).sum::<f64>() / x.len() as f64
+    }
+
+    pub fn variance(x: &[Vector3<f64>], mu: f64) -> f64 {
+        let sum: f64 = x.iter().map(|v| (v.magnitude() - mu).abs()).sum();
+        sum / x.len() as f64
     }
 
     pub fn variance2(x: &[Vector3<f64>], mu: f64) -> f64 {
