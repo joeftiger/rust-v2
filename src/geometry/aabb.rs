@@ -150,8 +150,14 @@ impl Geometry for Aabb {
         let half_size = self.size() / 2.0;
         let center = self.min + half_size;
         let direction = point - center;
-        let bias = 1.0 + floats::BIG_EPSILON;
+        let bias = 1.01;
 
+        // Used for debugging. The bias fom
+        // let a = direction * bias;
+        // let b = a.div_element_wise(half_size);
+        // let c = b.map(|f| f as i64);
+        // let d = c.map(|f| f as Float);
+        // let normal = d.normalize();
         let normal = (direction * bias)
             .div_element_wise(half_size)
             .map(|f| f as i64 as Float)
