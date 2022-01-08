@@ -61,6 +61,8 @@ pub enum DirectIllumination {
     All,
     /// Get direct illumination for a random emitter.
     Random,
+    /// Don't get direct illumination.
+    None,
 }
 
 impl DirectIllumination {
@@ -71,6 +73,7 @@ impl DirectIllumination {
                 let chosen = (sample * scene.num_emitters() as Float) as usize;
                 &scene.emitters()[chosen..chosen]
             }
+            DirectIllumination::None => &[],
         }
     }
 
