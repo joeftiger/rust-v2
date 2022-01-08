@@ -395,6 +395,7 @@ impl Mesh {
         self
     }
 
+    #[must_use]
     pub fn build(mut self) -> Self {
         if self.shading_mode == ShadingMode::Phong && self.normals.is_empty() {
             log::info!(target: "Mesh", "computing normals...");

@@ -1,6 +1,8 @@
 use super::Face;
 use crate::{Float, Vec3};
 use core::str::SplitWhitespace;
+use std::fs;
+use lz4_flex::decompress_size_prepended;
 
 pub struct ObjFile {
     pub vertices: Vec<Vec3>,
@@ -10,7 +12,16 @@ pub struct ObjFile {
 
 impl ObjFile {
     pub fn load(path: &str) -> Result<Self, String> {
-        let content = std::fs::read_to_string(path).unwrap();
+        let content = match path.rsplit_once('.') {
+            Some((_, "obj")) => fs::read_to_string(path).map_err(|e| e.to_string())?,
+            Some((_, "lz4")) => {
+                let binary = fs::read(path).map_err(|e| e.to_string())?;
+                let bytes = decompress_size_prepended(&binary).map_err(|e| e.to_string())?;
+                String::from_utf8(bytes).map_err(|e| e.to_string())?
+            }
+            Some((_, ending)) => return Err(format!("Unknown file ending: {}", ending)),
+            None => return Err(format!("Unknown file type: {}", path)),
+        };
 
         let mut vertices = Vec::new();
         let mut normals = Vec::new();

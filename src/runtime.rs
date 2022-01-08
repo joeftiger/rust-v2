@@ -166,7 +166,7 @@ impl Runtime {
     pub fn load(path: &str) -> Option<Self> {
         match path.rsplit_once('.') {
             Some((_, "ron")) => Self::load_ron(path),
-            Some((_, "bin")) => Self::load_checkpoint(path),
+            Some((_, "lz4")) => Self::load_checkpoint(path),
             Some((_, ending)) => {
                 log::warn!(target: "Loading Runtime", "Unknown file ending: {}, trying best-effort", ending);
                 Self::load_ron(path).or_else(|| Self::load_checkpoint(path))
