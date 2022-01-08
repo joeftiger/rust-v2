@@ -60,7 +60,7 @@ impl OrenNayar {
             let d_cos = cos_phi_i * cos_phi_o + sin_phi_i * sin_phi_o;
             d_cos.max(0.0)
         } else {
-            0.0
+            return FRAC_1_PI * self.a;
         };
 
         let cos_theta_i_abs = cos_theta(incident).abs();
@@ -89,6 +89,7 @@ impl BxDF for OrenNayar {
 
     fn evaluate(&self, incident: Vec3, outgoing: Vec3) -> Spectrum {
         let oren_nayar = self.calc_param(incident, outgoing);
+        debug_assert!(oren_nayar >= 0.0, "Oren Nayar parameter is >= 0");
 
         self.r * oren_nayar
     }
