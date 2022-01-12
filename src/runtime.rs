@@ -260,7 +260,7 @@ impl Runtime {
     }
 
     pub fn save(&self) {
-        let path = format!("{}.bin", &self.renderer.config.output);
+        let path = format!("{}.lz4", &self.renderer.config.output);
         RuntimeSerde::from(self).save_to(path);
     }
 
