@@ -1,5 +1,6 @@
 pub use aabb::*;
 pub use bubble::*;
+pub use disk::*;
 pub use mesh::*;
 pub use plane::*;
 pub use point::*;
@@ -13,6 +14,7 @@ use cgmath::InnerSpace;
 pub mod aabb;
 pub mod bubble;
 pub mod bvh;
+pub mod disk;
 pub mod mesh;
 pub mod plane;
 pub mod point;
