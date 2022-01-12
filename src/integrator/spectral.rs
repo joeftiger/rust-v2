@@ -34,7 +34,7 @@ impl SpectralPath {
             let bsdf = hit.object.bsdf();
 
             if let SceneObject::Emitter(e) = hit.object {
-                *illumination += *throughput * e.radiance_lambda(outgoing, normal, index);
+                *illumination += *throughput * e.radiance_lambda(index);
             }
 
             *illumination += *throughput
@@ -88,16 +88,11 @@ impl SpectralPath {
             let bsdf = hit.object.bsdf();
 
             if let SceneObject::Emitter(e) = hit.object {
-                illumination
-                    .add_assign(throughput.mul(e.radiance_packet(outgoing, normal, indices)));
+                illumination.add_assign(throughput.mul(e.radiance_packet(indices)));
             }
 
-            illumination.add_assign(throughput.mul(self.direct_illum.sample_packet(
-                scene,
-                &hit,
-                &self.sampler,
-                indices,
-            )));
+            let direct_illumination = self.direct_illum.sample_packet(scene, &hit, &self.sampler, indices);
+            illumination.add_assign(throughput.mul(direct_illumination));
 
             match bsdf.sample_packet(
                 normal,

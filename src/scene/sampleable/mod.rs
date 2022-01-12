@@ -1,3 +1,4 @@
+mod disk;
 mod point;
 mod sphere;
 
@@ -8,11 +9,10 @@ use crate::{Float, Vec2, Vec3};
 pub struct SurfaceSample {
     pub point: Vec3,
     pub normal: Vec3,
-    pub pdf: Float,
 }
 impl SurfaceSample {
-    pub fn new(point: Vec3, normal: Vec3, pdf: Float) -> Self {
-        Self { point, normal, pdf }
+    pub const fn new(point: Vec3, normal: Vec3) -> Self {
+        Self { point, normal }
     }
 }
 

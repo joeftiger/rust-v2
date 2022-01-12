@@ -30,7 +30,7 @@ impl Integrator for SpectralSingle {
                     let bsdf = hit.object.bsdf();
 
                     if let SceneObject::Emitter(e) = hit.object {
-                        illumination += throughput * e.radiance_lambda(outgoing, normal, index);
+                        illumination += throughput * e.radiance_lambda(index);
                     }
 
                     illumination += throughput

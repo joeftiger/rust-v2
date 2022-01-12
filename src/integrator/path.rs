@@ -29,7 +29,7 @@ impl Integrator for Path {
                 let bsdf = hit.object.bsdf();
 
                 if let SceneObject::Emitter(e) = &hit.object {
-                    illumination += throughput * e.radiance(outgoing, normal);
+                    illumination += throughput * e.radiance();
                 }
 
                 illumination += throughput * self.direct_illum.sample(scene, &hit, &self.sampler);

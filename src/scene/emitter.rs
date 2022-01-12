@@ -18,75 +18,31 @@ pub struct Emitter {
 
 impl Emitter {
     /// Computes the radiance of this emitter.
-    ///
-    /// # Constraints
-    /// * `incident`: All values should be finite (neither infinite nor `NaN`).
-    ///                Should be normalized.
-    /// * `normal`: All values should be finite.
-    ///              Should be normalized.
-    ///
-    /// # Arguments
-    /// * `incident`: The incident on the surface of an object
-    /// * `normal`: The normal on the surface of an object
     #[inline]
-    pub fn radiance(&self, incident: Vec3, normal: Vec3) -> Spectrum {
-        let cos_theta = incident.dot(normal);
-
-        if cos_theta > 0.0 {
-            self.emission
-        } else {
-            Spectrum::splat(0.0)
-        }
+    pub fn radiance(&self) -> Spectrum {
+        self.emission
     }
 
     /// Computes the radiance of this emitter.
     ///
     /// # Constraints
-    /// * `incident`: All values should be finite (neither infinite nor `NaN`).
-    ///                Should be normalized.
-    /// * `normal`: All values should be finite.
-    ///              Should be normalized.
     /// * `indices`: All values should be within `[0, `[Spectrum::size]`)`.
     ///
     /// # Arguments
-    /// * `incident`: The incident on the surface of an object
-    /// * `normal`: The normal on the surface of an object
     /// * `indices`: The spectral indices
-    pub fn radiance_packet(
-        &self,
-        incident: Vec3,
-        normal: Vec3,
-        indices: &[usize; PACKET_SIZE],
-    ) -> [Float; PACKET_SIZE] {
-        let cos_theta = incident.dot(normal);
-        if cos_theta > 0.0 {
-            indices.map(|i| self.emission[i])
-        } else {
-            [0.0; PACKET_SIZE]
-        }
+    pub fn radiance_packet(&self, indices: &[usize; PACKET_SIZE]) -> [Float; PACKET_SIZE] {
+        indices.map(|i| self.emission[i])
     }
 
     /// Computes the radiance of this emitter.
     ///
     /// # Constraints
-    /// * `incident`: All values should be finite (neither infinite nor `NaN`).
-    ///                Should be normalized.
-    /// * `normal`: All values should be finite.
-    ///              Should be normalized.
     /// * `index`: Should be within `[0, `[Spectrum::size]`)`.
     ///
     /// # Arguments
-    /// * `incident`: The incident on the surface of an object
-    /// * `normal`: The normal on the surface of an object
     /// * `index`: The spectral index
-    pub fn radiance_lambda(&self, incident: Vec3, normal: Vec3, index: usize) -> Float {
-        let cos_theta = incident.dot(normal);
-
-        if cos_theta > 0.0 {
-            self.emission[index]
-        } else {
-            0.0
-        }
+    pub fn radiance_lambda(&self, index: usize) -> Float {
+        self.emission[index]
     }
 
     /// Samples the emitter.
@@ -101,10 +57,8 @@ impl Emitter {
     pub fn sample(&self, point: Vec3, sample: Vec2) -> EmitterSample<Spectrum> {
         let surface_sample = self.geometry.sample_surface(point, sample);
         let occlusion = OcclusionTester::between(point, surface_sample.point);
-        let incident = occlusion.ray.direction;
-        let radiance = self.radiance(-incident, surface_sample.normal);
 
-        EmitterSample::new(radiance, incident, surface_sample.pdf, occlusion)
+        EmitterSample::new(self.radiance(), occlusion.ray.direction, occlusion)
     }
 
     /// Samples the emitter.
@@ -126,10 +80,12 @@ impl Emitter {
     ) -> EmitterSample<[Float; PACKET_SIZE]> {
         let surface_sample = self.geometry.sample_surface(point, sample);
         let occlusion = OcclusionTester::between(point, surface_sample.point);
-        let incident = occlusion.ray.direction;
-        let radiances = self.radiance_packet(-incident, surface_sample.normal, indices);
 
-        EmitterSample::new(radiances, incident, surface_sample.pdf, occlusion)
+        EmitterSample::new(
+            self.radiance_packet(indices),
+            occlusion.ray.direction,
+            occlusion,
+        )
     }
 
     /// Samples the emitter.
@@ -146,10 +102,12 @@ impl Emitter {
     pub fn sample_lambda(&self, point: Vec3, sample: Vec2, index: usize) -> EmitterSample<Float> {
         let surface_sample = self.geometry.sample_surface(point, sample);
         let occlusion_tester = OcclusionTester::between(point, surface_sample.point);
-        let incident = occlusion_tester.ray.direction;
-        let radiance = self.radiance_lambda(-incident, surface_sample.normal, index);
 
-        EmitterSample::new(radiance, incident, surface_sample.pdf, occlusion_tester)
+        EmitterSample::new(
+            self.radiance_lambda(index),
+            occlusion_tester.ray.direction,
+            occlusion_tester,
+        )
     }
 }
 
@@ -179,15 +137,13 @@ impl Geometry for Emitter {
 pub struct EmitterSample<T> {
     pub radiance: T,
     pub incident: Vec3,
-    pub pdf: Float,
     pub occlusion: OcclusionTester,
 }
 impl<T> EmitterSample<T> {
-    pub const fn new(radiance: T, incident: Vec3, pdf: Float, occlusion: OcclusionTester) -> Self {
+    pub const fn new(radiance: T, incident: Vec3, occlusion: OcclusionTester) -> Self {
         Self {
             radiance,
             incident,
-            pdf,
             occlusion,
         }
     }
@@ -227,5 +183,10 @@ impl OcclusionTester {
     /// * `scene` - The scene to intersect against
     pub fn unoccluded(&self, scene: &Scene) -> bool {
         !scene.intersects(self.ray)
+    }
+
+    #[inline]
+    pub fn decay(&self) -> Float {
+        (self.ray.t_end - self.ray.t_start).powi(2)
     }
 }

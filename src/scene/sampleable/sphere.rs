@@ -1,6 +1,6 @@
 use crate::geometry::{spherical_to_cartesian_frame_trig, CoordinateSystem, Sphere};
 use crate::scene::{Sampleable, SurfaceSample};
-use crate::util::mc::{sample_unit_sphere, uniform_cone_pdf};
+use crate::util::mc::sample_unit_sphere;
 use crate::{Float, Vec2, Vec3};
 use cgmath::InnerSpace;
 #[cfg(not(feature = "f64"))]
@@ -11,9 +11,8 @@ use std::f64::consts::TAU;
 fn sample_surface_inside(sphere: &Sphere, sample: Vec2) -> SurfaceSample {
     let normal = sample_unit_sphere(sample);
     let point = sphere.center + sphere.radius * normal;
-    let pdf = 1.0 / sphere.surface_area();
 
-    SurfaceSample::new(point, normal, pdf)
+    SurfaceSample::new(point, normal)
 }
 
 #[typetag::serde]
@@ -64,9 +63,8 @@ impl Sampleable for Sphere {
             /* end PBR code */
 
             let point = self.center + self.radius * normal;
-            let pdf = uniform_cone_pdf(cos_theta_max);
 
-            SurfaceSample::new(point, normal, pdf)
+            SurfaceSample::new(point, normal)
         }
     }
 }
