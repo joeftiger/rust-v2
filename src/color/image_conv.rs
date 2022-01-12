@@ -6,13 +6,86 @@ const fn bit_size_of<T>() -> usize {
     core::mem::size_of::<T>() * 8
 }
 
-macro_rules! conv {
-    ($($origin:ident => $target:ident<$t:ident>),*) => {
+macro_rules! srgb_conv {
+    (Srgb => $($t:ident),*) => {
         $(
-            impl From<$origin> for $target<$t> {
-                fn from(o: $origin) -> Self {
+            impl From<Srgb> for Rgb<$t> {
+                fn from(mut srgb: Srgb) -> Self {
+                    srgb *= 2u128.pow(bit_size_of::<$t>() as u32) as Float;
+
+                    // IMPORTANT: note the inversion as our Srgb ranks lambda first => blue first
+                    Self::from([
+                        srgb.data[2] as $t,
+                        srgb.data[1] as $t,
+                        srgb.data[0] as $t,
+                    ])
+                }
+            }
+        )*
+    };
+    (Srgb no-scale => $($t:ident),*) => {
+        $(
+            impl From<Srgb> for Rgb<$t> {
+                fn from(srgb: Srgb) -> Self {
+                    // IMPORTANT: note the inversion as our Srgb ranks lambda first => blue first
+                    Self::from([
+                        srgb.data[2] as $t,
+                        srgb.data[1] as $t,
+                        srgb.data[0] as $t,
+                    ])
+                }
+            }
+        )*
+    }
+}
+srgb_conv!(Srgb => u8, u16, u32, u64, usize);
+srgb_conv!(Srgb no-scale => f32, f64);
+
+macro_rules! xyz_conv {
+    (Xyz => $($t:ident),*) => {
+        $(
+            impl From<Xyz> for Rgb<$t> {
+                fn from(xyz: Xyz) -> Self {
+                    let mut srgb = Srgb::from(xyz);
+                    srgb *= 2u128.pow(bit_size_of::<$t>() as u32) as Float;
+
+                    // IMPORTANT: note the inversion as our Xyz ranks lambda first => blue first
+                    Self::from([
+                        srgb.data[2] as $t,
+                        srgb.data[1] as $t,
+                        srgb.data[0] as $t,
+                    ])
+                }
+            }
+        )*
+    };
+    (Xyz no-scale => $($t:ident),*) => {
+        $(
+            impl From<Xyz> for Rgb<$t> {
+                fn from(xyz: Xyz) -> Self {
+                    let srgb = Srgb::from(xyz);
+
+                    // IMPORTANT: note the inversion as our Xyz ranks lambda first => blue first
+                    Self::from([
+                        srgb.data[2] as $t,
+                        srgb.data[1] as $t,
+                        srgb.data[0] as $t,
+                    ])
+                }
+            }
+        )*
+    }
+}
+xyz_conv!(Xyz => u8, u16, u32, u64, usize);
+xyz_conv!(Xyz no-scale => f32, f64);
+
+macro_rules! spectral_conv {
+    (Spectrum => $($t:ident),*) => {
+        $(
+            impl From<Spectrum> for Rgb<$t> {
+                fn from(o: Spectrum) -> Self {
                     let mut srgb = Srgb::from(o);
-                    srgb *= 2u32.pow(bit_size_of::<$t>() as u32) as Float;
+                    srgb *= 2u128.pow(bit_size_of::<$t>() as u32) as Float;
 
                     Self::from([
                         srgb.data[0] as $t,
@@ -23,10 +96,10 @@ macro_rules! conv {
             }
         )*
     };
-    (no-scale $($origin:ident => $target:ident<$t:ident>),*) => {
+    (Spectrum no-scale => $($t:ident),*) => {
         $(
-            impl From<$origin> for $target<$t> {
-                fn from(o: $origin) -> Self {
+            impl From<Spectrum> for Rgb<$t> {
+                fn from(o: Spectrum) -> Self {
                     let srgb = Srgb::from(o);
 
                     Self::from([
@@ -39,34 +112,5 @@ macro_rules! conv {
         )*
     }
 }
-
-conv!(
-    Srgb => Rgb<u8>,
-    Srgb => Rgb<u16>,
-    Srgb => Rgb<u32>,
-    Srgb => Rgb<u64>,
-    Srgb => Rgb<usize>,
-
-    Xyz => Rgb<u8>,
-    Xyz => Rgb<u16>,
-    Xyz => Rgb<u32>,
-    Xyz => Rgb<u64>,
-    Xyz => Rgb<usize>,
-
-    Spectrum => Rgb<u8>,
-    Spectrum => Rgb<u16>,
-    Spectrum => Rgb<u32>,
-    Spectrum => Rgb<u64>,
-    Spectrum => Rgb<usize>
-);
-
-conv!(
-    no-scale
-
-    Srgb => Rgb<f32>,
-    Srgb => Rgb<f64>,
-    Xyz => Rgb<f32>,
-    Xyz => Rgb<f64>,
-    Spectrum => Rgb<f32>,
-    Spectrum => Rgb<f64>
-);
+spectral_conv!(Spectrum => u8, u16, u32, u64, usize);
+spectral_conv!(Spectrum no-scale => f32, f64);
