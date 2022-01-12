@@ -1,5 +1,6 @@
 use crate::color::{ColorSerde, Spectrum, Xyz};
-use crate::Float;
+use crate::{Float, Vec3};
+use cgmath::Matrix3;
 use core::convert::TryFrom;
 
 crate::color!(
@@ -23,19 +24,20 @@ impl TryFrom<ColorSerde> for Srgb {
     }
 }
 
+#[rustfmt::skip]
+#[allow(clippy::excessive_precision)]
+const RGB_TO_XYZ: Matrix3<Float> = Matrix3::new(
+    0.4124564,0.2126729,0.0193339,
+    0.3575761, 0.7151522, 0.1191920,
+    0.1804375, 0.0721750, 0.9503041,
+);
 impl From<Srgb> for Xyz {
-    #[allow(clippy::many_single_char_names)]
     #[allow(clippy::excessive_precision)]
     fn from(srgb: Srgb) -> Self {
-        let r = uncompand(srgb[0]);
-        let g = uncompand(srgb[1]);
-        let b = uncompand(srgb[2]);
+        let rgb = Vec3::new(uncompand(srgb[0]), uncompand(srgb[1]), uncompand(srgb[2]));
+        let data = RGB_TO_XYZ * rgb;
 
-        let x = 0.4124564 * r + 0.3575761 * g + 0.1804375 * b;
-        let y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b;
-        let z = 0.0193339 * r + 0.1191920 * g + 0.9503041 * b;
-
-        Self::new([x, y, z])
+        Self::new(*data.as_ref())
     }
 }
 
