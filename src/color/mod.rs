@@ -1,7 +1,7 @@
 use core::convert::TryFrom;
 
 use crate::Float;
-use color_data::{LAMBDA_END, LAMBDA_NUM, LAMBDA_START};
+use color_data::LAMBDA_NUM;
 pub use spectrum::*;
 pub use srgb::*;
 pub use xyz::*;
