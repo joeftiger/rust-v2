@@ -30,6 +30,7 @@ impl Emitter {
     ///
     /// # Arguments
     /// * `indices`: The spectral indices
+    #[inline]
     pub fn radiance_packet(&self, indices: &[usize; PACKET_SIZE]) -> [Float; PACKET_SIZE] {
         indices.map(|i| self.emission[i])
     }
@@ -41,6 +42,7 @@ impl Emitter {
     ///
     /// # Arguments
     /// * `index`: The spectral index
+    #[inline]
     pub fn radiance_lambda(&self, index: usize) -> Float {
         self.emission[index]
     }
@@ -160,7 +162,7 @@ impl OcclusionTester {
     /// This is to work around floating point imprecision that might occur in the intersection code.
     ///
     /// # Constraints
-    /// * `origin` - All values should be finite (neither infinite nor `NaNN`).
+    /// * `origin` - All values should be finite (neither infinite nor `NaN`).
     /// * `target` - All values should be finite.
     ///
     /// # Arguments
@@ -170,8 +172,8 @@ impl OcclusionTester {
         let direction = target - origin;
         let distance = direction.magnitude();
 
-        let t_start = floats::EPSILON;
-        let t_end = distance - floats::EPSILON;
+        let t_start = floats::BIG_EPSILON;
+        let t_end = distance - floats::BIG_EPSILON;
 
         let ray = Ray::new2(origin, direction / distance, t_start, t_end);
         Self { ray }

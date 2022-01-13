@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Side {
     Left,
     Right,

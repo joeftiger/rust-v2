@@ -107,12 +107,20 @@ impl Geometry for Scene {
         intersection
     }
 
-    fn intersects(&self, ray: Ray) -> bool {
-        self.bvh
-            .intersect(ray)
-            .iter()
-            .any(|&i| self.objects[i as usize].intersects(ray))
-    }
+    // fn intersects(&self, ray: Ray) -> bool {
+    //     let intersecting = self.bvh.intersect(ray);
+    //     for i in intersecting {
+    //         let object = &self.objects[i as usize];
+    //         if object.intersects(ray) {
+    //             return true;
+    //         }
+    //     }
+    //     false
+    //     // self.bvh
+    //     //     .intersect(ray)
+    //     //     .iter()
+    //     //     .any(|&i| self.objects[i as usize].intersects(ray))
+    // }
 }
 
 impl Serialize for Scene {

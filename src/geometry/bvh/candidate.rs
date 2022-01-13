@@ -1,47 +1,38 @@
-use super::{Item, Plane};
+use super::Plane;
 use crate::geometry::Aabb;
-use core::cmp::Ordering;
+use std::cmp::Ordering;
 
-pub type Candidates = Vec<Candidate>;
-
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Candidate {
     pub plane: Plane,
     pub is_left: bool,
-    pub item: Item,
+    pub index: u32,
 }
 
 impl Candidate {
-    pub const fn new(plane: Plane, is_left: bool, item: Item) -> Self {
+    pub const fn new(plane: Plane, is_left: bool, index: u32) -> Self {
         Self {
             plane,
             is_left,
-            item,
+            index,
         }
     }
 
+    /// Generates split candidates for all dimensions.
     #[inline]
-    pub fn gen_candidates(item: Item, aabb: &Aabb) -> Candidates {
+    pub fn gen_candidates(index: u32, aabb: Aabb) -> Vec<Candidate> {
         vec![
-            Self::new(Plane::X(aabb.min.x), true, item),
-            Self::new(Plane::X(aabb.max.x), false, item),
-            Self::new(Plane::Y(aabb.min.y), true, item),
-            Self::new(Plane::Y(aabb.max.y), false, item),
-            Self::new(Plane::Z(aabb.min.z), true, item),
-            Self::new(Plane::Z(aabb.max.z), false, item),
+            Candidate::new(Plane::X(aabb.min.x), true, index),
+            Candidate::new(Plane::X(aabb.max.x), false, index),
+            Candidate::new(Plane::Y(aabb.min.y), true, index),
+            Candidate::new(Plane::Y(aabb.max.y), false, index),
+            Candidate::new(Plane::Z(aabb.min.z), true, index),
+            Candidate::new(Plane::Z(aabb.max.z), false, index),
         ]
     }
 
-    #[inline]
-    pub fn dimension(&self) -> usize {
+    pub const fn dim(self) -> usize {
         self.plane.dim()
-    }
-}
-
-impl Ord for Candidate {
-    #[inline]
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.plane.val().total_cmp(&other.plane.val())
     }
 }
 
@@ -52,10 +43,17 @@ impl PartialOrd for Candidate {
     }
 }
 
-impl PartialEq for Candidate {
+impl Ord for Candidate {
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.plane.val().total_cmp(&other.plane.val())
+    }
+}
+
+impl PartialEq<Self> for Candidate {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.plane == other.plane
+        self.plane.val() == other.plane.val() && self.dim() == other.dim()
     }
 }
 
