@@ -91,7 +91,9 @@ impl SpectralPath {
                 illumination.add_assign(throughput.mul(e.radiance_packet(indices)));
             }
 
-            let direct_illumination = self.direct_illum.sample_packet(scene, &hit, &self.sampler, indices);
+            let direct_illumination =
+                self.direct_illum
+                    .sample_packet(scene, &hit, &self.sampler, indices);
             illumination.add_assign(throughput.mul(direct_illumination));
 
             match bsdf.sample_packet(
