@@ -27,8 +27,8 @@ impl Pixel {
     }
 
     pub fn reset(&mut self) {
-        self.samples.data.iter_mut().for_each(|s| *s = 0);
         self.average.data.iter_mut().for_each(|a| *a = 0.0);
+        self.samples.data.iter_mut().for_each(|s| *s = 0);
     }
 
     pub fn add_none(&mut self) {
@@ -37,38 +37,40 @@ impl Pixel {
         self.average = avg / self.samples;
     }
 
+    #[inline]
     pub fn add_none_packet(&mut self, indices: &[usize; PACKET_SIZE]) {
-        for &index in indices {
-            let avg = self.average[index] * self.samples[index] as Float;
-            self.samples.inc(index);
-            self.average[index] = avg / self.samples[index] as Float;
-        }
+        indices.iter().for_each(|&i| self.add_none_lambda(i));
+        // for &index in indices {
+        //     let avg = self.average[index] * self.samples[index] as Float;
+        //     self.samples.inc(index);
+        //     self.average[index] = avg / self.samples[index] as Float;
+        // }
+    }
+
+    #[inline]
+    pub fn add_none_lambda(&mut self, index: usize) {
+        let avg = self.average[index] * self.samples[index] as Float;
+        self.samples.inc(index);
+        self.average[index] = avg / self.samples[index] as Float;
     }
 
     pub fn add(&mut self, spectrum: Spectrum) {
-        let mut avg = self.average * self.samples;
-        avg += spectrum;
+        let avg = self.average * self.samples + spectrum;
         self.samples.inc_all();
-
         self.average = avg / self.samples;
     }
 
+    #[inline]
     pub fn add_packet(&mut self, spectrum: &[Float; PACKET_SIZE], indices: &[usize; PACKET_SIZE]) {
         for i in 0..PACKET_SIZE {
-            let index = indices[i];
-            let mut avg = self.average[index] * self.samples[index] as Float;
-            avg += spectrum[i];
-            self.samples.inc(index);
-
-            self.average[index] = avg / self.samples[index] as Float;
+            self.add_lambda(spectrum[i], indices[i]);
         }
     }
 
+    #[inline]
     pub fn add_lambda(&mut self, lambda: Float, index: usize) {
-        let mut avg = self.average[index] * self.samples[index] as Float;
-        avg += lambda;
+        let avg = self.average[index] * self.samples[index] as Float + lambda;
         self.samples.inc(index);
-
         self.average[index] = avg / self.samples[index] as Float;
     }
 }
@@ -90,16 +92,17 @@ struct SampleCounter {
 }
 
 impl SampleCounter {
+    #[inline(always)]
     fn inc(&mut self, index: usize) {
         self.data[index] += 1;
     }
 
+    #[inline]
     fn inc_all(&mut self) {
         self.data.iter_mut().for_each(|v| *v += 1);
     }
 }
 
-#[allow(clippy::derivable_impls)]
 impl Default for SampleCounter {
     fn default() -> Self {
         Self {
