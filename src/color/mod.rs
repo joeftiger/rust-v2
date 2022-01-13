@@ -247,9 +247,10 @@ macro_rules! color {
             }
 
             #[inline]
-            pub fn lambda(index: usize) -> $t {
-                let t = index as $t / ($size - 1) as $t;
-                t.lerp(LAMBDA_START, LAMBDA_END)
+            pub const fn lambda(index: usize) -> $t {
+                $path $(::$path2)* ::LAMBDAS[index]
+                // let t = index as $t / ($size - 1) as $t;
+                // t.lerp(LAMBDA_START, LAMBDA_END)
             }
 
             #[inline]

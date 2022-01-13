@@ -1,6 +1,9 @@
 #![allow(clippy::excessive_precision)]
 use crate::Float;
 
+// data taken from: https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_RGB_color_space
+pub const LAMBDAS: [Float; 3] = [0.4358, 0.5461, 0.7];
+
 #[rustfmt::skip]
 pub const DARK_SKIN:     [Float; 3] = [0.111412689919835, 0.100825890613966, 0.067768595180202];
 #[rustfmt::skip]
