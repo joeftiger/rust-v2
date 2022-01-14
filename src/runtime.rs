@@ -146,7 +146,7 @@ impl Runtime {
                 tile_progress: self.tile_progress.clone(),
                 renderer: self.renderer.clone(),
             };
-            let path = format!("{}.bin", &self.renderer.config.output);
+            let path = format!("{}.lz4", &self.renderer.config.output);
 
             thread::spawn(move || {
                 while !cancel.load(Ordering::Relaxed) {
