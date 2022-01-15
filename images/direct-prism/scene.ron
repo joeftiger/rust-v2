@@ -1,6 +1,6 @@
 Config (
     config: (
-        output: "prism-srgb-dark",
+        output: "prism-spectral-dark",
         passes: 1000,
         threads: None,
     ),
@@ -39,32 +39,6 @@ Config (
     },
     scene: (
         objects: [
-            // back wall
-            /*Receiver((
-                geometry: {
-                    "Aabb": (
-                        min: (
-                            x: -2.08,
-                            y: -2.08,
-                            z: -2.08,
-                        ),
-                        max: (
-                            x: 2.08,
-                            y: 2.08,
-                            z: -2,
-                        ),
-                    ),
-                },
-                bsdf: (
-                    bxdfs: [
-                        {
-                            "LambertianReflection": (
-                                r: Constant(1),
-                            ),
-                        },
-                    ],
-                ),
-            )),*/
             // prism
             Receiver((
                 geometry: {
