@@ -34,7 +34,7 @@ const XYZ_TO_RGB: Matrix3<Float> = Matrix3::new(
 impl From<Xyz> for Srgb {
     #[allow(clippy::excessive_precision)]
     fn from(xyz: Xyz) -> Self {
-        let vec = Vec3::new(xyz[0], xyz[1], xyz[2]);
+        let vec = Vec3::from(xyz.data);
         let rgb = XYZ_TO_RGB * vec;
 
         Self::new([compand(rgb.x), compand(rgb.y), compand(rgb.z)])

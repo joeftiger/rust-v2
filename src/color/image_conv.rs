@@ -11,7 +11,7 @@ macro_rules! srgb_conv {
         $(
             impl From<Srgb> for Rgb<$t> {
                 fn from(mut srgb: Srgb) -> Self {
-                    srgb *= 2u128.pow(bit_size_of::<$t>() as u32) as Float;
+                    srgb *= 2u64.pow(bit_size_of::<$t>() as u32) as Float;
 
                     // IMPORTANT: note the inversion as our Srgb ranks lambda first => blue first
                     Self::from([
@@ -47,7 +47,7 @@ macro_rules! xyz_conv {
             impl From<Xyz> for Rgb<$t> {
                 fn from(xyz: Xyz) -> Self {
                     let mut srgb = Srgb::from(xyz);
-                    srgb *= 2u128.pow(bit_size_of::<$t>() as u32) as Float;
+                    srgb *= 2u64.pow(bit_size_of::<$t>() as u32) as Float;
 
                     // IMPORTANT: note the inversion as our Xyz ranks lambda first => blue first
                     Self::from([
@@ -85,7 +85,7 @@ macro_rules! spectral_conv {
             impl From<Spectrum> for Rgb<$t> {
                 fn from(o: Spectrum) -> Self {
                     let mut srgb = Srgb::from(o);
-                    srgb *= 2u128.pow(bit_size_of::<$t>() as u32) as Float;
+                    srgb *= 2u64.pow(bit_size_of::<$t>() as u32) as Float;
 
                     Self::from([
                         srgb.data[0] as $t,
