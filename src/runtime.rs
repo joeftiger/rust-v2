@@ -13,7 +13,7 @@ use std::{fs, thread};
 pub struct Runtime {
     pub renderer: Arc<Renderer>,
     pub tile_progress: Arc<AtomicUsize>,
-    pub tiles: usize,
+    pub tiles_per_frame: usize,
     pub total_tiles: usize,
     pub passes: usize,
     pub cancel: Arc<AtomicBool>,
@@ -48,7 +48,7 @@ impl Runtime {
         let runtime = Self {
             renderer,
             tile_progress,
-            tiles,
+            tiles_per_frame: tiles,
             total_tiles,
             passes,
             cancel,
@@ -68,7 +68,7 @@ impl Runtime {
     fn progress_printer(&self) {
         let cancel = self.cancel.clone();
         let tile_progress = self.tile_progress.clone();
-        let tiles = self.tiles;
+        let tiles = self.tiles_per_frame;
         let passes = self.passes;
 
         thread::spawn(move || {
@@ -120,7 +120,7 @@ impl Runtime {
             let cancel = self.cancel.clone();
             let r = self.renderer.clone();
             let p = self.tile_progress.clone();
-            let tiles = self.tiles;
+            let tiles = self.tiles_per_frame;
 
             thread::spawn(move || {
                 while !cancel.load(Ordering::Relaxed) {
@@ -212,19 +212,24 @@ impl Runtime {
 
     pub fn run_frames(&self, frames: usize) {
         let progress = self.tile_progress.load(Ordering::SeqCst);
-        let num_jobs = (frames * self.tiles).min(self.total_tiles - progress);
-        log::trace!(target: "Runtime", "continuing from frame {} with {} jobs", progress / self.tiles, num_jobs);
+        let tpf = self.tiles_per_frame;
+        let num_jobs = frames * tpf;
+        let current_frame = progress / tpf;
+        log::trace!(target: "Runtime", "rendering frames {} to {}", current_frame, current_frame + frames);
 
-        self.threadpool.force_restart();
-        let tiles = self.tiles;
+        let t = self.threadpool.workers();
+        let threadpool = Threadpool::new(t, Some(t), None);
+
         for _ in 0..num_jobs {
-            let r = Arc::clone(&self.renderer);
+            let r = self.renderer.clone();
             let p = self.tile_progress.clone();
-            self.threadpool.execute(move || {
-                let index = p.fetch_add(1, Ordering::SeqCst) % tiles;
+            threadpool.execute(move || {
+                let index = p.fetch_add(1, Ordering::SeqCst) % tpf;
                 r.integrate(index);
             });
         }
+
+        threadpool.join();
     }
 
     pub fn run(&self) {
@@ -234,7 +239,7 @@ impl Runtime {
             let p = self.tile_progress.clone();
 
             let total_tiles = self.total_tiles;
-            let tiles = self.tiles;
+            let tiles = self.tiles_per_frame;
             self.threadpool.execute(move || loop {
                 if c.load(Ordering::Relaxed) {
                     break;

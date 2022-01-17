@@ -56,7 +56,9 @@ impl ObjFile {
                         Self::parse_face(part).map_err(|e| format!("line {}: {}", line_num, e))?;
                     faces.push(face);
                 }
-                unknown => log::warn!(target: "Obj Decoder", "line {}: '{}'. we only know 'v', 'vn' or 'f'", line_num, unknown),
+                unknown => {
+                    log::warn!(target: "Obj Decoder", "line {}: '{}'. we only know 'v', 'vn' or 'f'", line_num, unknown)
+                }
             }
         }
 

@@ -33,26 +33,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
     log::info!(target: "Rust-V2-Error", "initializing...");
-    let (frames, original, runtimes) = parse_args().expect(HELP);
+    let (frames, original, paths) = parse_args().expect(HELP);
 
     let mut plots = ErrorType::variants()
         .map(|e| poloto::plot(e.to_string(), "frame", e.y_label().to_string()));
 
     let mut errors = ErrorType::variants().map(|_| Vec::new());
     log::info!(target: "Rust-V2-Error", "initialization completed!");
-    for runtime in &runtimes {
+    for path in &paths {
+        let runtime = Runtime::load(path).expect(HELP);
         errors.iter_mut().for_each(|e| e.clear());
-        let runtime_name = runtime.renderer.config.output.as_str();
-        log::info!(target: "Rust-V2-Error", "calculating error for scene: {}", runtime_name);
+        let runtime_name = runtime.renderer.config.output.clone();
+        log::info!(target: "Rust-V2-Error", "calculating error for scene: {}", &runtime_name);
 
         let num_steps = runtime.passes.div_ceil(frames);
         let x_range = 0..=num_steps;
 
-        runtime.run_frames(frames);
         while !runtime.done() {
-            runtime.join_threadpool();
-            let current = runtime.renderer.get_image();
             runtime.run_frames(frames);
+            let current = runtime.renderer.get_image();
 
             ErrorType::variants()
                 .iter_mut()
@@ -69,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .clone()
                 .zip(error)
                 .map(|(x, y)| ((x * frames) as f64, y));
-            plot.line(runtime_name, data);
+            plot.line(runtime_name.clone(), data);
         }
         log::info!(target: "Rust-V2-Error", "plotting completed!");
     }
@@ -86,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn parse_args() -> Option<(usize, Rgb16Image, [Runtime; 2])> {
+fn parse_args() -> Option<(usize, Rgb16Image, [String; 2])> {
     let mut args = args().skip(1);
 
     let frame_steps: usize = args.next()?.parse().ok()?;
@@ -97,7 +96,7 @@ fn parse_args() -> Option<(usize, Rgb16Image, [Runtime; 2])> {
         .decode()
         .ok()?
         .into_rgb16();
-    let runtimes = [Runtime::load(&args.next()?)?, Runtime::load(&args.next()?)?];
+    let runtimes = [args.next()?, args.next()?];
 
     Some((frame_steps, original, runtimes))
 }
