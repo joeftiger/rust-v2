@@ -1,7 +1,7 @@
 Config (
     config: (
-        output: "prism-spectral-dark",
-        passes: 1000,
+        output: "direct-prism",
+        passes: 100,
         threads: None,
     ),
     camera: {
@@ -31,7 +31,7 @@ Config (
     },
     integrator: {
         "SpectralPath": (
-            max_depth: 16,
+            max_depth: 3,
             sampler: Random,
             spectral_sampler: Hero,
             direct_illum: All,
@@ -39,11 +39,11 @@ Config (
     },
     scene: (
         objects: [
-            // prism
+            // direct-prism
             Receiver((
                 geometry: {
                     "Mesh": Config((
-                        path: "./res/meshes/prism.obj",
+                        path: "./meshes/prism.obj",
                         scale: Some((
                             x: 1,
                             y: 1,
