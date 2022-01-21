@@ -1,9 +1,11 @@
+pub use orthographic::*;
 pub use perspective::*;
 
 use crate::geometry::Ray;
 use crate::UVec2;
 
 pub mod dummy;
+pub mod orthographic;
 pub mod perspective;
 pub mod sensor;
 
