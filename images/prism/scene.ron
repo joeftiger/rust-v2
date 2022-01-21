@@ -1,0 +1,132 @@
+Config (
+    config: (
+        output: "prism",
+        passes: 4000000,
+        threads: None,
+    ),
+    camera: {
+        "OrthographicCamera": Config ((
+            sampler: Random,
+            position: (
+                x: 0.5,
+                y: 1,
+                z: 3,
+            ),
+            target: (
+                x: 0.5,
+                y: -1.5,
+                z: 0,
+            ),
+            up: (
+                x: 0,
+                y: 1,
+                z: 0,
+            ),
+            fov: (
+                x: 5,
+                y: 3,
+            ),
+            resolution: (
+                x: 640,
+                y: 384,
+            ),
+        )),
+    },
+    integrator: {
+        "SpectralPath": (
+            max_depth: 64,
+            sampler: Random,
+            spectral_sampler: Hero,
+            direct_illum: All,
+        ),
+    },
+    scene: (
+        objects: [
+            // floor
+            Receiver((
+                geometry: {
+                    "Aabb": (
+                        min: (
+                            x: -16,
+                            y: -3.08,
+                            z: -16,
+                        ),
+                        max: (
+                            x: 16,
+                            y: -1.5,
+                            z: 16,
+                        ),
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "LambertianReflection": (
+                                r: Color(White),
+                            ),
+                        },
+                    ],
+                ),
+            )),
+            // prism
+            Receiver((
+                geometry: {
+                    "Mesh": Config((
+                        path: "./meshes/prism.obj",
+                        scale: Some((
+                            x: 1,
+                            y: 1,
+                            z: 0.5,
+                        )),
+                        translation: Some((
+                            x: 0,
+                            y: -2,
+                            z: 0,
+                        )),
+                        shading_mode: Flat,
+                    )),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "FresnelSpecular": (
+                                r: Constant(1),
+                                t: Constant(1),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Linear(1.7, 1.2),
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+            )),
+            Emitter((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: -1.5,
+                            y: -1.5,
+                            z: 0,
+                        ),
+                        radius: 0.125,
+                    ),
+                    // "Disk": (
+                    //     center: (
+                    //         x: -1.5,
+                    //         y: -1.5,
+                    //         z: 0,
+                    //     ),
+                    //     radius: 0.125,
+                    //     normal: (
+                    //         x: 1,
+                    //         y: 0,
+                    //         z: 0,
+                    //     ),
+                    // ),
+                },
+                emission:Constant(2),
+            )),
+        ],
+    ),
+)

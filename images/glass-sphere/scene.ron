@@ -1,6 +1,6 @@
 Config (
     config: (
-        output: "glass-sphere",
+        output: "spectral-path",
         passes: 20000,
         threads: None,
     ),
