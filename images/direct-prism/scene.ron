@@ -1,0 +1,97 @@
+(
+    config: (
+        output: "./images/direct-prism/srgb",
+        passes: 1000,
+        threads: None,
+    ),
+    camera: {
+        "NaiveCamera": Config ((
+            sampler: Random,
+            eye: (
+                x: 0,
+                y: 0,
+                z: 4,
+            ),
+            target: (
+                x: 0,
+                y: -0.22,
+                z: 0,
+            ),
+            up: (
+                x: 0,
+                y: 1,
+                z: 0,
+            ),
+            fov: 10,
+            resolution: (
+                x: 256,
+                y: 512,
+            ),
+        )),
+    },
+    integrator: {
+        "SpectralPath": (
+            max_depth: 3,
+            sampler: Random,
+            spectral_sampler: Hero,
+            direct_illum: All,
+        ),
+    },
+    scene: (
+        objects: [
+            // direct-prism
+            Receiver((
+                geometry: {
+                    "Mesh": Config((
+                        path: "./meshes/prism.obj",
+                        scale: Some((
+                            x: 1,
+                            y: 1,
+                            z: 0.5,
+                        )),
+                        rotation: Some((
+                            mat: (
+                                x: (x: 0, y:0, z:1),
+                                y: (x: 0, y:1, z:0),
+                                z: (x:-1, y:0, z:0),
+                            )
+                        )),
+                        translation: Some((
+                            x: 0,
+                            y: -1.25,
+                            z: 1,
+                        )),
+                        shading_mode: Flat,
+                    )),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "SpecularTransmission": (
+                                r: Constant(1),
+                                t: Constant(1),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Linear(2, 1),
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+            )),
+            Emitter((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0,
+                            y: -0.5,
+                            z: -0.5,
+                        ),
+                        radius: 0.125,
+                    ),
+                },
+                emission: Constant(1),
+            )),
+        ],
+    ),
+)

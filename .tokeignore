@@ -1,0 +1,7 @@
+**/*.obj
+**/*.ron
+**/*.png
+**/*.bin
+**/*.lz4
+**/*.LOCK
+target/
