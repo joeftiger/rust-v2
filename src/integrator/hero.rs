@@ -26,14 +26,16 @@ impl PureHero {
         throughput: &mut Float,
         curr_depth: u32,
     ) {
-        for _ in curr_depth..self.max_depth {
+        for curr_depth in curr_depth..self.max_depth {
             let outgoing = -hit.i.incoming;
             let point = hit.i.point;
             let normal = hit.i.normal;
             let bsdf = hit.object.bsdf();
 
             if let SceneObject::Emitter(e) = hit.object {
-                *illumination += *throughput * e.radiance_lambda(index);
+                if curr_depth != 1 || self.direct_illum != DirectIllumination::Indirect {
+                    *illumination += *throughput * e.radiance_lambda(index);
+                }
             }
 
             *illumination += *throughput
@@ -87,7 +89,9 @@ impl PureHero {
             let bsdf = hit.object.bsdf();
 
             if let SceneObject::Emitter(e) = hit.object {
-                illumination.add_assign(throughput.mul(e.radiance_packet(indices)));
+                if curr_depth != 1 || self.direct_illum != DirectIllumination::Indirect {
+                    illumination.add_assign(throughput.mul(e.radiance_packet(indices)));
+                }
             }
 
             illumination.add_assign(throughput.mul(self.direct_illum.sample_packet(

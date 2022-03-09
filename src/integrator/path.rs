@@ -22,14 +22,16 @@ impl Integrator for Path {
             let mut illumination = Spectrum::splat(0.0);
             let mut throughput = Spectrum::splat(1.0);
 
-            for _ in 0..self.max_depth {
+            for curr_depth in 0..self.max_depth {
                 let outgoing = -hit.i.incoming;
                 let point = hit.i.point;
                 let normal = hit.i.normal;
                 let bsdf = hit.object.bsdf();
 
                 if let SceneObject::Emitter(e) = &hit.object {
-                    illumination += throughput * e.radiance();
+                    if curr_depth != 1 || self.direct_illum != DirectIllumination::Indirect {
+                        illumination += throughput * e.radiance();
+                    }
                 }
 
                 illumination += throughput * self.direct_illum.sample(scene, &hit, &self.sampler);

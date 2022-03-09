@@ -55,7 +55,7 @@ pub trait Integrator: Send + Sync {
 }
 
 /// The direct illumination strategy.
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum DirectIllumination {
     /// Get direct illumination for all emitters.
     All,
@@ -63,6 +63,8 @@ pub enum DirectIllumination {
     Random,
     /// Don't get direct illumination.
     None,
+    /// Only count indirect illumination.
+    Indirect,
 }
 
 impl DirectIllumination {
@@ -73,7 +75,7 @@ impl DirectIllumination {
                 let chosen = (sample * scene.num_emitters() as Float) as usize;
                 &scene.emitters()[chosen..chosen]
             }
-            DirectIllumination::None => &[],
+            _ => &[],
         }
     }
 

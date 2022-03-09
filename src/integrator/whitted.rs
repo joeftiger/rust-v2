@@ -72,7 +72,9 @@ impl Whitted {
         let mut illumination = Spectrum::splat(0.0);
 
         if let SceneObject::Emitter(e) = intersection.object {
-            illumination += e.radiance();
+            if depth != 1 || self.direct_illum != DirectIllumination::Indirect {
+                illumination += e.radiance();
+            }
         }
 
         illumination += self.direct_illum.sample(scene, intersection, &self.sampler);
@@ -94,10 +96,6 @@ impl Whitted {
 #[typetag::serde]
 impl Integrator for Whitted {
     fn integrate(&self, scene: &Scene, primary_ray: Ray, pixel: &mut Pixel) {
-        // if pixel.position == crate::UVec2::new(100, 232) {
-        //     println!("debug");
-        // }
-
         if let Some(i) = scene.intersect(primary_ray) {
             let illumination = self.illumination(scene, &i, 0);
 
