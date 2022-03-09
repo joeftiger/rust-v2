@@ -275,10 +275,6 @@ impl Runtime {
         self.threadpool.join();
     }
 
-    pub fn wait_threadpool(&self) {
-        self.threadpool.restart();
-    }
-
     pub fn save(&self) {
         let path = format!("{}.lz4", &self.renderer.config.output);
         RuntimeSerde::from(self).save_to(path);
