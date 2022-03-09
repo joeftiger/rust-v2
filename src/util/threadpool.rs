@@ -1,4 +1,5 @@
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
+use parking_lot::Mutex;
 use std::thread;
 use std::time::Duration;
 
@@ -110,6 +111,7 @@ impl Builder {
 
 pub struct Threadpool {
     num_workers: usize,
+    num_active_workers: Mutex<usize>,
     queue: MessageQueue,
     exit_sender: Sender<()>,
     exit_receiver: Receiver<()>,
@@ -138,6 +140,7 @@ impl Threadpool {
 
         let threadpool = Self {
             num_workers,
+            num_active_workers: Mutex::new(0),
             queue,
             exit_sender,
             exit_receiver,
@@ -148,9 +151,11 @@ impl Threadpool {
     }
 
     fn create_workers(&self) {
+        let mut num_active_workers = self.num_active_workers.lock();
         for _ in 0..self.num_workers {
             let worker = Worker::new(self.queue.clone(), self.exit_sender.clone());
             worker.start();
+            *num_active_workers += 1;
         }
     }
 
@@ -162,6 +167,23 @@ impl Threadpool {
     /// The number of workers.
     pub fn workers(&self) -> usize {
         self.num_workers
+    }
+
+    /// The number of currently active workers.
+    pub fn active_workers(&self) -> usize {
+        *self.num_active_workers.lock()
+    }
+
+    /// [Self::join] execution and restart all workers.
+    pub fn restart(&self) {
+        self.join();
+        self.create_workers()
+    }
+
+    /// [Self::terminate] execution and restart all workers.
+    pub fn force_restart(&self) {
+        self.terminate();
+        self.create_workers()
     }
 
     /// Inserts the given function for execution at the next possible point (LIFO).
@@ -192,12 +214,16 @@ impl Threadpool {
 
     /// Waits for all tasks and workers to finish and exit.
     pub fn join(&self) {
-        for _ in 0..self.num_workers {
+        let mut num_active_workers = self.num_active_workers.lock();
+        let num_workers = *num_active_workers;
+        for _ in 0..num_workers {
             self.queue.insert(Message::Exit);
         }
-        for _ in 0..self.num_workers {
+        for _ in 0..num_workers {
             let _ = self.exit_receiver.recv();
+            *num_active_workers -= 1;
         }
+        assert_eq!(0, *num_active_workers);
     }
 }
 
