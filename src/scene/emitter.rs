@@ -16,6 +16,7 @@ pub struct Emitter {
     #[serde(skip_serializing_if = "is_true")]
     pub decay: bool,
     #[serde(default)]
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub tag: String,
 }
 
