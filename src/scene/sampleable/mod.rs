@@ -3,7 +3,7 @@ mod point;
 mod sphere;
 
 use crate::geometry::Geometry;
-use crate::{Float, Vec2, Vec3};
+use crate::{Vec2, Vec3};
 
 #[derive(Copy, Clone)]
 pub struct SurfaceSample {
@@ -18,7 +18,5 @@ impl SurfaceSample {
 
 #[typetag::serde]
 pub trait Sampleable: Geometry {
-    fn surface_area(&self) -> Float;
-
     fn sample_surface(&self, origin: Vec3, sample: Vec2) -> SurfaceSample;
 }

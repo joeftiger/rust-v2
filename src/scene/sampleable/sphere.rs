@@ -20,11 +20,6 @@ fn sample_surface_inside(sphere: &Sphere, sample: Vec2) -> SurfaceSample {
 
 #[typetag::serde]
 impl Sampleable for Sphere {
-    #[inline]
-    fn surface_area(&self) -> Float {
-        2.0 * TAU * self.radius2()
-    }
-
     // Copyright: https://github.com/mmp/pbrt-v3/blob/master/src/shapes/sphere.cpp
     fn sample_surface(&self, origin: Vec3, sample: Vec2) -> SurfaceSample {
         let oc = self.center - origin;
