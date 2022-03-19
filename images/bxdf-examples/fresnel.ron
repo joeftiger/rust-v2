@@ -1,0 +1,161 @@
+(
+    config: (
+        output: "./images/bxdf-examples/fresnel-20000",
+        passes: 20000,
+        threads: None,
+    ),
+    camera: {
+        "NaiveCamera": Config ((
+            sampler: Random,
+            eye: (
+                x: 0,
+                y: 1,
+                z: 5,
+            ),
+            target: (
+                x: 0,
+                y: 0,
+                z: 3,
+            ),
+            up: (
+                x: 0,
+                y: 1,
+                z: 0,
+            ),
+            fov: 70,
+            resolution: (
+                x: 512,
+                y: 512,
+            ),
+        )),
+    },
+    integrator: {
+        "Path": (
+            max_depth: 6,
+            sampler: Random,
+            spectral_sampler: Hero,
+            direct_illum: All,
+        ),
+    },
+    scene: (
+        objects: [
+            // reflection wall
+            Emitter((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0,
+                            y: 0,
+                            z: 0,
+                        ),
+                        radius: 30,
+                        inverted: true,
+                    ),
+                },
+                emission: MulColor(2, BlueSky),
+            )),
+            // floor
+            Receiver((
+                geometry: {
+                    "Aabb": (
+                        min: (
+                            x: -50,
+                            y: -5,
+                            z: -50,
+                        ),
+                        max: (
+                            x: 50,
+                            y: 0,
+                            z: 50,
+                        )
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "LambertianReflection": (
+                                r: Color(OrangeYellow),
+                            ),
+                        },
+                    ],
+                ),
+            )),
+            // water
+            Receiver((
+                geometry: {
+                    "Aabb": (
+                        min: (
+                            x: -50,
+                            y: 0.015625,
+                            z: -50,
+                        ),
+                        max: (
+                            x: 50,
+                            y: 0.125,
+                            z: 50,
+                        )
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "FresnelSpecular": (
+                                r: Constant(1),
+                                t: Constant(1),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Water,
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+            )),
+            // sphere
+            /*Receiver((
+                geometry: {
+                    "Sphere": (
+                        center: (
+                            x: 0,
+                            y: 0.25,
+                            z: 0,
+                        ),
+                        radius: 0.25,
+                    ),
+                },
+                bsdf: (
+                    bxdfs: [
+                        {
+                            "FresnelSpecular": (
+                                r: Constant(1),
+                                t: Constant(1),
+                                fresnel: (
+                                    eta_i: Air,
+                                    eta_t: Glass,
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+            )),*/
+            /*Emitter((
+                geometry: {
+                    "Plane": (
+                        point: (
+                            x: 0,
+                            y: 0,
+                            z: 0,
+                        ),
+                        normal: (
+                            x: 0,
+                            y: 1,
+                            z: 0,
+                        ),
+                    ),
+                },
+                emission: MulColor(1, White),
+                decay: false,
+            )),*/
+        ],
+    ),
+)
