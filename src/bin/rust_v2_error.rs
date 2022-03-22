@@ -163,7 +163,10 @@ impl ErrorCalc {
     }
 
     fn psnr(original: &Rgb16Image, current: &Rgb16Image) -> f64 {
-        const A: f64 = 96.32946607530499; // 20.0 * f64::log10(u16::MAX as f64)
+        // const max: f64 = u16::MAX as f64;
+        // let A = 20.0 * f64::log10(Vec3::new(max, max, max))
+
+        const A: f64 = 101.10067862250162;
         A - 10.0 * f64::log10(Self::mse(original, current))
     }
 
