@@ -1,7 +1,7 @@
 mod disk;
+mod plane;
 mod point;
 mod sphere;
-mod plane;
 
 use crate::geometry::Geometry;
 use crate::{Vec2, Vec3};
