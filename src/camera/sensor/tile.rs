@@ -2,17 +2,13 @@ use crate::camera::sensor::Pixel;
 use crate::{UVec2, SENSOR_TILE_WIDTH};
 
 use serde::{Deserialize, Serialize};
+use serde_big_array::BigArray;
 
 pub const SENSOR_PIXEL_LEN: usize = (SENSOR_TILE_WIDTH * SENSOR_TILE_WIDTH) as usize;
 
-serde_big_array::big_array! {
-    SensorSerde;
-    SENSOR_PIXEL_LEN
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SensorTile {
-    #[serde(with = "SensorSerde")]
+    #[serde(with = "BigArray")]
     pub pixels: [Pixel; SENSOR_PIXEL_LEN],
 }
 

@@ -1,5 +1,3 @@
-#![feature(total_cmp)]
-
 extern crate image;
 
 use cgmath::{Basis3, Matrix4, Vector2, Vector3};

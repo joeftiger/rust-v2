@@ -1,4 +1,3 @@
-#![feature(total_cmp)]
 #![feature(int_roundings)]
 
 use cgmath::{InnerSpace, Vector3};

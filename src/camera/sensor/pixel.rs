@@ -4,11 +4,7 @@ use core::slice::SliceIndex;
 use serde::{Deserialize, Serialize};
 
 use crate::{Float, Spectrum, UVec2, PACKET_SIZE};
-
-serde_big_array::big_array! {
-    PixelSerde;
-    Spectrum::size()
-}
+use serde_big_array::BigArray;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Pixel {
@@ -93,7 +89,7 @@ impl Default for Pixel {
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 struct SampleCounter {
-    #[serde(with = "PixelSerde")]
+    #[serde(with = "BigArray")]
     data: [u32; Spectrum::size()],
 }
 

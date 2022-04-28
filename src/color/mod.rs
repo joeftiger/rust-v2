@@ -2,6 +2,7 @@ use core::convert::TryFrom;
 
 use crate::Float;
 use color_data::LAMBDA_NUM;
+use serde_big_array::BigArray;
 pub use spectrum::*;
 pub use srgb::*;
 pub use xyz::*;
@@ -13,17 +14,12 @@ pub mod spectrum;
 pub mod srgb;
 pub mod xyz;
 
-serde_big_array::big_array! {
-    SerdeBigArray;
-    3, LAMBDA_NUM
-}
-
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum ColorSerde {
     Srgb([Float; 3]),
     Xyz([Float; 3]),
-    #[serde(with = "SerdeBigArray")]
+    #[serde(with = "BigArray")]
     Spectrum([Float; 36]),
     Color(Color),
     MulColor(Float, Color),
@@ -46,11 +42,11 @@ macro_rules! color {
         use core::slice::SliceIndex;
         use core::iter::Sum;
 
-        use serde_big_array::reex::Error;
-
-        use crate::color::*;
-        use crate::util::floats;
-        use crate::util::math::Lerp;
+        use $crate::color::*;
+        use $crate::util::floats;
+        use $crate::util::math::Lerp;
+        use serde;
+        use serde::de::Error;
 
         #[derive(Clone, Copy, Debug, PartialEq)]
         pub struct $name {
@@ -58,7 +54,7 @@ macro_rules! color {
         }
 
         impl serde::Serialize for $name {
-            fn serialize<S>(&self, serializer: S) -> Result<<S as serde::Serializer>::Ok, <S as serde::Serializer>::Error> where
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where
                 S: serde::Serializer {
                 for c in Color::variants() {
                     if self.eq(&c) {
@@ -77,7 +73,7 @@ macro_rules! color {
         }
 
         impl<'de> serde::Deserialize<'de> for $name {
-            fn deserialize<D>(deserializer: D) -> Result<Self, <D as serde::Deserializer<'de>>::Error> where
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where
                 D: serde::Deserializer<'de> {
                 let c = ColorSerde::deserialize(deserializer)?;
                 Self::try_from(c.clone()).map_err(|_| D::Error::custom(format!("Unable to parse {} from {:?}", core::any::type_name::<$name>(), c)))
