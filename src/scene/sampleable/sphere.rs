@@ -42,7 +42,7 @@ impl Sampleable for Sphere {
             let cos_theta_max = Float::max(0.0, 1.0 - sin_theta_max2).sqrt();
 
             let mut cos_theta = (cos_theta_max - 1.0) * sample.x + 1.0;
-            let mut sin_theta2 = 1.0 - cos_theta * cos_theta;
+            let mut sin_theta2 = Float::max(0.0, 1.0 - cos_theta * cos_theta);
 
             if sin_theta2 < 0.00068523 {
                 sin_theta2 = sin_theta_max2 * sample.x;
