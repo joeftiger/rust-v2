@@ -5,7 +5,7 @@
         threads: None,
     ),
     camera: {
-        "OrthographicCamera": Config ((
+        "OrthographicCamera": (
             position: (
                 x: 0,
                 y: 0.0625,
@@ -30,7 +30,7 @@
                 y: 512,
             ),
             sampler: Random,
-        )),
+        ),
     },
     integrator: {
         "SpectralPath": (

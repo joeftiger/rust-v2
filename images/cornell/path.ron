@@ -5,7 +5,7 @@
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "NaiveCamera": (
             sampler: Random,
             eye: (
                 x: 0,
@@ -27,7 +27,7 @@
                 x: 512,
                 y: 512,
             ),
-        )),
+        ),
     },
     integrator: {
         "Path": (
@@ -59,8 +59,7 @@
                         {
                             "OrenNayar": (
                                 r: Color(White),
-                                a: 0.86516786,
-                                b: 0.25882423,
+                                sigma: 20,
                             ),
                         },
                     ],
@@ -88,8 +87,7 @@
                         {
                             "OrenNayar": (
                                 r: Color(Red),
-                                a: 0.86516786,
-                                b: 0.25882423,
+                                sigma: 20,
                             ),
                         },
                     ],
@@ -116,8 +114,7 @@
                         {
                             "OrenNayar": (
                                 r: Color(White),
-                                a: 0.86516786,
-                                b: 0.25882423,
+                                sigma: 20,
                             ),
                         },
                     ],
@@ -144,8 +141,7 @@
                         {
                             "OrenNayar": (
                                 r: Color(Green),
-                                a: 0.86516786,
-                                b: 0.25882423,
+                                sigma: 20,
                             ),
                         },
                     ],
@@ -172,8 +168,7 @@
                         {
                             "OrenNayar": (
                                 r: Color(White),
-                                a: 0.86516786,
-                                b: 0.25882423,
+                                sigma: 20,
                             ),
                         },
                     ],
@@ -200,8 +195,7 @@
                         {
                             "OrenNayar": (
                                 r: Color(White),
-                                a: 0.86516786,
-                                b: 0.25882423,
+                                sigma: 20,
                             ),
                         },
                     ],
@@ -224,8 +218,7 @@
                         {
                             "OrenNayar": (
                                 r: Color(Blue),
-                                a: 0.86516786,
-                                b: 0.25882423,
+                                sigma: 20,
                             ),
                         },
                     ],

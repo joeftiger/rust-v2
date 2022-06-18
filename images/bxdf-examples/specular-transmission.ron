@@ -1,6 +1,6 @@
 (
     config: (
-        output: "./images/bxdf-examples/fresnel2",
+        output: "./images/bxdf-examples/specular-transmission",
         passes: 10000,
         threads: None,
     ),
@@ -30,11 +30,10 @@
         ),
     },
     integrator: {
-        "SpectralPath": (
+        "Path": (
             max_depth: 8,
             sampler: Random,
             direct_illum: All,
-            spectral_sampler: Hero,
         ),
     },
     scene: (
@@ -81,8 +80,7 @@
                 bsdf: (
                     bxdfs: [
                         {
-                            "FresnelSpecular": (
-                                r: MulColor(2, BlueSky),
+                            "SpecularTransmission": (
                                 t: MulColor(2, BlueSky),
                                 fresnel: (
                                     eta_i: Air,
@@ -125,7 +123,7 @@
                         radius: 1,
                     ),
                 },
-                emission: Constant(1),
+                emission: MulColor(1, White),
                 decay: false,
             )),
         ],

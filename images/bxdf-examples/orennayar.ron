@@ -1,11 +1,11 @@
 (
     config: (
-        output: "./images/bxdf-examples/fresnel2",
+        output: "./images/bxdf-examples/orennayar",
         passes: 10000,
         threads: None,
     ),
     camera: {
-        "NaiveCamera": (
+        "NaiveCamera":(
             sampler: Random,
             eye: (
                 x: -8,
@@ -30,11 +30,10 @@
         ),
     },
     integrator: {
-        "SpectralPath": (
+        "Path": (
             max_depth: 8,
             sampler: Random,
             direct_illum: All,
-            spectral_sampler: Hero,
         ),
     },
     scene: (
@@ -81,13 +80,9 @@
                 bsdf: (
                     bxdfs: [
                         {
-                            "FresnelSpecular": (
+                            "OrenNayar": (
                                 r: MulColor(2, BlueSky),
-                                t: MulColor(2, BlueSky),
-                                fresnel: (
-                                    eta_i: Air,
-                                    eta_t: Glass,
-                                ),
+                                sigma: 20,
                             ),
                         },
                     ],
@@ -125,7 +120,7 @@
                         radius: 1,
                     ),
                 },
-                emission: Constant(1),
+                emission: MulColor(1, White),
                 decay: false,
             )),
         ],

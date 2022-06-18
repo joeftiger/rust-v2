@@ -5,7 +5,7 @@
         threads: None,
     ),
     camera: {
-        "NaiveCamera": Config ((
+        "NaiveCamera": (
             sampler: Random,
             eye: (
                 x: 0,
@@ -27,7 +27,7 @@
                 x: 256,
                 y: 512,
             ),
-        )),
+        ),
     },
     integrator: {
         "SpectralPath": (

@@ -1,6 +1,6 @@
 (
     config: (
-        output: "./images/bxdf-examples/fresnel2",
+        output: "./images/bxdf-examples/specular-reflection-2",
         passes: 10000,
         threads: None,
     ),
@@ -30,11 +30,10 @@
         ),
     },
     integrator: {
-        "SpectralPath": (
+        "Path": (
             max_depth: 8,
             sampler: Random,
             direct_illum: All,
-            spectral_sampler: Hero,
         ),
     },
     scene: (
@@ -81,13 +80,9 @@
                 bsdf: (
                     bxdfs: [
                         {
-                            "FresnelSpecular": (
-                                r: MulColor(2, BlueSky),
-                                t: MulColor(2, BlueSky),
-                                fresnel: (
-                                    eta_i: Air,
-                                    eta_t: Glass,
-                                ),
+                            "SpecularReflection": (
+                                r: Color(Grey1),
+                                fresnel: Noop,
                             ),
                         },
                     ],
@@ -102,13 +97,14 @@
                             z: 0,
                         ),
                         radius: 20,
+                        inverted: true,
                     )
                 },
                 bsdf: (
                     bxdfs: [
                         {
                             "LambertianReflection": (
-                                r: Color(White),
+                                r: MulColor(2, BlueSky),
                             ),
                         },
                     ],
