@@ -1,17 +1,20 @@
 use crate::bxdf::{cos_phi, cos_theta, sin_phi, sin_theta, BxDF, BxDFFlag};
 use crate::util::floats::EPSILON;
 use crate::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 #[cfg(not(feature = "f64"))]
 use std::f32::consts::FRAC_1_PI;
 #[cfg(feature = "f64")]
 use std::f64::consts::FRAC_1_PI;
 
 /// The Oren-Nayar reflectance model describes rough opaque diffuse surfaces where each facet is lambertian (diffuse).
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct OrenNayar {
     r: Spectrum,
+    sigma: Float,
+    #[serde(skip)]
     a: Float,
+    #[serde(skip)]
     b: Float,
 }
 
@@ -30,7 +33,7 @@ impl OrenNayar {
         let a = 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33)));
         let b = 0.45 * sigma2 / (sigma2 + 0.09);
 
-        Self { r, a, b }
+        Self { r, sigma, a, b }
     }
 
     /// Calculates the Oren Nayar scaling parameter.
@@ -109,5 +112,26 @@ impl BxDF for OrenNayar {
         let oren_nayar = self.calc_param(incident, outgoing);
 
         self.r[index] * oren_nayar
+    }
+}
+
+impl<'de> Deserialize<'de> for OrenNayar {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let (r, sigma) = {
+            #[derive(Deserialize)]
+            struct OrenNayar {
+                r: Spectrum,
+                sigma: Float,
+            }
+
+            let de = OrenNayar::deserialize(deserializer)?;
+
+            (de.r, de.sigma)
+        };
+
+        Ok(Self::new(r, sigma))
     }
 }
