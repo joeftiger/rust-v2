@@ -54,7 +54,7 @@ impl Rotation {
 /// starting from a light source.
 ///
 /// This has implications on the calculations of `BSDF`.
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum TransportMode {
     Radiance,
     Importance,

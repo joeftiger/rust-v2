@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize, Serializer};
 /// A triangle consists of vertex indices `(v0, v1, v2)`.
 ///
 /// In order to query a triangle for an intersection, it is therefore needed to pass it the proper mesh.
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Face {
     pub v: (u32, u32, u32),
     pub vn: (u32, u32, u32),

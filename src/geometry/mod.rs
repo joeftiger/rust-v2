@@ -378,7 +378,7 @@ impl CoordinateSystem {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Intersection {
     pub point: Vec3,
     pub normal: Vec3,
