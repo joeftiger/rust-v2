@@ -6,9 +6,10 @@ use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-#[serde(from = "OrthographicConfig")]
-#[serde(into = "OrthographicConfig")]
+#[serde(from = "Config")]
+#[serde(into = "Config")]
 pub struct OrthographicCamera {
+    config: Config,
     top_left: Vec3,
     x_dir: Vec3,
     y_dir: Vec3,
@@ -35,62 +36,6 @@ impl Camera for OrthographicCamera {
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-enum OrthographicConfig {
-    Full(Full),
-    Config(Config),
-}
-
-impl From<OrthographicConfig> for OrthographicCamera {
-    fn from(oc: OrthographicConfig) -> Self {
-        match oc {
-            OrthographicConfig::Full(f) => Self::from(f),
-            OrthographicConfig::Config(c) => Self::from(c),
-        }
-    }
-}
-
-impl From<OrthographicCamera> for OrthographicConfig {
-    fn from(o: OrthographicCamera) -> Self {
-        Self::Full(Full::from(o))
-    }
-}
-
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-struct Full {
-    top_left: Vec3,
-    x_dir: Vec3,
-    y_dir: Vec3,
-    z_dir: Vec3,
-    resolution: UVec2,
-    sampler: CameraSampler,
-}
-
-impl From<Full> for OrthographicCamera {
-    fn from(f: Full) -> Self {
-        Self {
-            top_left: f.top_left,
-            x_dir: f.x_dir,
-            y_dir: f.y_dir,
-            z_dir: f.z_dir,
-            resolution: f.resolution,
-            sampler: f.sampler,
-        }
-    }
-}
-impl From<OrthographicCamera> for Full {
-    fn from(o: OrthographicCamera) -> Self {
-        Self {
-            top_left: o.top_left,
-            x_dir: o.x_dir,
-            y_dir: o.y_dir,
-            z_dir: o.z_dir,
-            resolution: o.resolution,
-            sampler: o.sampler,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 struct Config {
     position: Vec3,
     target: Vec3,
@@ -111,6 +56,7 @@ impl From<Config> for OrthographicCamera {
         let y_dir = c.fov.y / c.resolution.y as Float * y_unit;
 
         Self {
+            config: c,
             top_left,
             x_dir,
             y_dir,
@@ -118,5 +64,11 @@ impl From<Config> for OrthographicCamera {
             resolution: c.resolution,
             sampler: c.sampler,
         }
+    }
+}
+
+impl From<OrthographicCamera> for Config {
+    fn from(o: OrthographicCamera) -> Self {
+        o.config
     }
 }
