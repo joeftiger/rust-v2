@@ -1,5 +1,5 @@
 use crate::color::cie::{lambda_to_xyz_approx, CIE_Y_INTEGRAL};
-use crate::color::color_data::LAMBDA_RANGE;
+use crate::color::color_data::{LAMBDA_RANGE, LAMBDA_STEP};
 use crate::color::{ColorSerde, Srgb};
 use crate::Float;
 use core::convert::TryFrom;
@@ -38,8 +38,10 @@ impl From<Spectrum> for Xyz {
             .map(|l| lambda_to_xyz_approx(l.lambda) * l.intensity)
             .sum();
 
-        const SCALE: Float = LAMBDA_RANGE / (CIE_Y_INTEGRAL * Spectrum::size() as Float);
+        xyz * LAMBDA_STEP
 
-        xyz * SCALE
+        // const SCALE: Float = LAMBDA_RANGE / (CIE_Y_INTEGRAL * Spectrum::size() as Float);
+        //
+        // xyz * SCALE
     }
 }
