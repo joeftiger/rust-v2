@@ -570,7 +570,7 @@ pub enum Color {
 }
 
 impl Color {
-    pub fn variants() -> [Self; 24] {
+    pub const fn variants() -> [Self; 24] {
         [
             Self::DarkSkin,
             Self::LightSkin,
