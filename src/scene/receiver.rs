@@ -14,6 +14,10 @@ pub struct Receiver {
 }
 
 impl Receiver {
+    pub const fn new(geometry: Box<dyn Geometry>, bsdf: BSDF, tag: String) -> Self {
+        Self { geometry, bsdf, tag }
+    }
+
     #[cold]
     #[inline(never)]
     pub fn dummy() -> Self {
