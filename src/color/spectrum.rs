@@ -1,5 +1,5 @@
-use crate::color::cie::{lambda_to_xyz_approx, CIE_Y_INTEGRAL};
-use crate::color::color_data::{LAMBDA_RANGE, LAMBDA_STEP};
+use crate::color::cie::*;
+use crate::color::color_data::LAMBDA_STEP;
 use crate::color::{ColorSerde, Srgb};
 use crate::Float;
 use core::convert::TryFrom;
@@ -32,16 +32,19 @@ impl From<Spectrum> for Srgb {
 
 impl From<Spectrum> for Xyz {
     fn from(spectrum: Spectrum) -> Self {
+        // use gaussian approximation (as in my paper)
         let xyz: Xyz = spectrum
             .as_light_waves()
             .iter()
             .map(|l| lambda_to_xyz_approx(l.lambda) * l.intensity)
             .sum();
 
-        xyz * LAMBDA_STEP
+        // use spectral data
+        // let x = (spectrum * Spectrum::new(CIE_X_BAR)).sum_values();
+        // let y = (spectrum * Spectrum::new(CIE_Y_BAR)).sum_values();
+        // let z = (spectrum * Spectrum::new(CIE_Z_BAR)).sum_values();
+        // let xyz = Self::new([x, y, z]);
 
-        // const SCALE: Float = LAMBDA_RANGE / (CIE_Y_INTEGRAL * Spectrum::size() as Float);
-        //
-        // xyz * SCALE
+        xyz * (LAMBDA_STEP / CIE_Y_INTEGRAL)
     }
 }
