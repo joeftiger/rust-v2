@@ -3,12 +3,13 @@ use crate::{Float, Spectrum, PACKET_SIZE};
 use core::mem;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize)]
 pub enum FresnelType {
     /// A `Fresnel` implementation for dielectric materials.
     Dielectric(FresnelDielectric),
     /// A no-operation `Fresnel` implementation that returns 100% reflection for all incoming directions.
     /// Although this is physically implausible, it is a convenient capability to have available.
+    #[default]
     Noop,
 }
 

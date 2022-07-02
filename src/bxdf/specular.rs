@@ -27,6 +27,7 @@ fn etas(
 #[derive(Serialize, Deserialize)]
 pub struct SpecularReflection {
     r: Spectrum,
+    #[serde(default)]
     fresnel: FresnelType,
 }
 
