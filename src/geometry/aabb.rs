@@ -1,4 +1,4 @@
-use crate::geometry::{Geometry, Intersection, Ray};
+use crate::geometry::{Geometry, Intersection, Plane, Ray};
 use crate::{Float, Vec3};
 use cgmath::{Bounded, ElementWise, InnerSpace};
 use serde::{Deserialize, Serialize};
@@ -110,6 +110,25 @@ impl Aabb {
         let min = self.min.zip(other, |a, b| a.min(b));
         let max = self.max.zip(other, |a, b| a.max(b));
         Self::new(min, max)
+    }
+
+    /// Returns the sides of this cube.
+    /// Each side is a [Plane] with origin at the center of each cube side.
+    ///
+    /// # Returns
+    /// * All sides of the cube
+    pub fn sides(&self) -> [Plane; 6] {
+        let center = self.center();
+        let offset = self.size() / 2.0;
+
+        [
+            Plane::new(center + Vec3::unit_x() * offset.x, Vec3::unit_x()),
+            Plane::new(center + Vec3::unit_y() * offset.y, Vec3::unit_y()),
+            Plane::new(center + Vec3::unit_z() * offset.z, Vec3::unit_z()),
+            Plane::new(center + Vec3::unit_x() * offset.x, -Vec3::unit_x()),
+            Plane::new(center + Vec3::unit_y() * offset.y, -Vec3::unit_y()),
+            Plane::new(center + Vec3::unit_z() * offset.z, -Vec3::unit_z()),
+        ]
     }
 }
 
