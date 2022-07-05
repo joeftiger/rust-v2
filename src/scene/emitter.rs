@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 pub struct Emitter {
     pub geometry: Box<dyn Sampleable>,
     #[serde(default)]
+    #[serde(skip_serializing_if = "BSDF::is_empty")]
     pub bsdf: BSDF,
     pub emission: Spectrum,
     #[serde(default = "true_bool")]
@@ -30,6 +31,10 @@ const fn is_true(b: &bool) -> bool {
 }
 
 impl Emitter {
+    pub const fn new(geometry: Box<dyn Sampleable>, bsdf: BSDF, emission: Spectrum, decay: bool, tag: String) -> Self {
+        Self { geometry, bsdf, emission, decay, tag }
+    }
+
     #[cold]
     #[inline(never)]
     pub fn dummy() -> Self {
