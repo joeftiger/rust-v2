@@ -10,11 +10,11 @@ pub struct BSDF {
 }
 
 impl BSDF {
-    pub fn new(bxdfs: Vec<Box<dyn BxDF>>) -> Self {
+    pub const fn new(bxdfs: Vec<Box<dyn BxDF>>) -> Self {
         Self { bxdfs }
     }
 
-    pub fn empty() -> Self {
+    pub const fn empty() -> Self {
         Self::new(Vec::new())
     }
 
