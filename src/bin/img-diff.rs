@@ -1,4 +1,4 @@
-#![feature(array_zip)]
+// #![feature(array_zip)]
 
 use image::io::Reader;
 use image::{ImageBuffer, Pixel, Rgb};

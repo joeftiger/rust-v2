@@ -1,4 +1,4 @@
-#![feature(int_roundings)]
+// #![feature(int_roundings)]
 
 use cgmath::{InnerSpace, Vector3};
 use image::io::Reader;
