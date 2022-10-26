@@ -629,7 +629,7 @@ impl TryFrom<&str> for Color {
             "Grey3" => Self::Grey3,
             "Grey4" => Self::Grey4,
             "Black" => Self::Black,
-            _ => return Err(format!("Unable to parse Color: {}", value)),
+            _ => return Err(format!("Unable to parse Color: {value}")),
         };
 
         Ok(c)

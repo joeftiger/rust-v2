@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Vertices: {}", obj.vertices.len());
     println!("Normals:  {}", obj.normals.len());
     println!("Faces:    {}", obj.faces.len());
-    println!("Aabb:     {:#?}", aabb);
+    println!("Aabb:     {aabb:#?}");
     println!("Center:   {:#?}", aabb.center());
     println!("Size:     {:#?}", aabb.size());
 

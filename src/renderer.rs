@@ -94,7 +94,7 @@ impl Renderer {
 
         let path = match appendix {
             None => self.config.output.clone(),
-            Some(num) => format!("{}-{}.exr", &self.config.output, num),
+            Some(num) => format!("{}-{num}.exr", &self.config.output),
         };
 
         match exr.save_with_format(format!("{}.exr", &path), ImageFormat::OpenExr) {

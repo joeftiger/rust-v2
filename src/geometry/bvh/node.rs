@@ -137,16 +137,16 @@ impl Node {
         let mut right = space;
         match plane {
             Plane::X(x) => {
-                left.max.x = x.max(space.min.x).min(space.max.x);
-                right.min.x = x.max(space.min.x).min(space.max.x);
+                left.max.x = x.clamp(space.min.x, space.max.x);
+                right.min.x = left.max.x;
             }
             Plane::Y(y) => {
-                left.max.y = y.max(space.min.y).min(space.max.y);
-                right.min.y = y.max(space.min.y).min(space.max.y);
+                left.max.y = y.clamp(space.min.y, space.max.y);
+                right.min.y = left.max.y;
             }
             Plane::Z(z) => {
-                left.max.z = z.max(space.min.z).min(space.max.z);
-                right.min.z = z.max(space.min.z).min(space.max.z);
+                left.max.z = z.clamp(space.min.z, space.max.z);
+                right.min.z = left.max.z;
             }
         }
         (left, right)

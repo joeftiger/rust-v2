@@ -28,11 +28,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let b = args.next().expect(HELP);
     let output = args.next().expect(HELP);
 
-    let mut a = Reader::open(&a)?
+    let mut a = Reader::open(a)?
         .with_guessed_format()?
         .decode()?
         .into_rgb16();
-    let b = Reader::open(&b)?
+    let b = Reader::open(b)?
         .with_guessed_format()?
         .decode()?
         .into_rgb16();

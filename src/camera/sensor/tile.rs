@@ -23,7 +23,7 @@ impl SensorTile {
         let mut i = 0;
         for x in 0..SENSOR_TILE_WIDTH {
             for y in 0..SENSOR_TILE_WIDTH {
-                let offset = UVec2::new(x as u32, y as u32);
+                let offset = UVec2::new(x, y);
                 pixels[i].position = start + offset;
 
                 i += 1;

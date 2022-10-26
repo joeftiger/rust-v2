@@ -52,7 +52,11 @@ impl Camera for PerspectiveCamera {
 impl From<CameraConfig> for PerspectiveCamera {
     fn from(conf: CameraConfig) -> Self {
         let res = conf.resolution.cast().unwrap();
-        let look_at = Mat4::look_at_rh(Point3::from_vec(conf.eye), Point3::from_vec(conf.target), conf.up);
+        let look_at = Mat4::look_at_rh(
+            Point3::from_vec(conf.eye),
+            Point3::from_vec(conf.target),
+            conf.up,
+        );
         let inv_res = Vec2::new(1.0, 1.0).div_element_wise(res);
 
         let y = (0.5 * conf.fov).to_radians();

@@ -19,8 +19,8 @@ impl ObjFile {
                 let bytes = decompress_size_prepended(&binary).map_err(|e| e.to_string())?;
                 String::from_utf8(bytes).map_err(|e| e.to_string())?
             }
-            Some((_, ending)) => return Err(format!("Unknown file ending: {}", ending)),
-            None => return Err(format!("Unknown file type: {}", path)),
+            Some((_, ending)) => return Err(format!("Unknown file ending: {ending}")),
+            None => return Err(format!("Unknown file type: {path}")),
         };
 
         let mut vertices = Vec::new();
@@ -35,15 +35,15 @@ impl ObjFile {
 
             let id = iter
                 .next()
-                .ok_or(format!("line {}: invalid line length", line_num))?;
+                .ok_or(format!("line {line_num}: invalid line length"))?;
             let part = iter
                 .next()
-                .ok_or(format!("line {}: missing part of id [{}]", line_num, id))?;
+                .ok_or(format!("line {line_num}: missing part of id [{id}]"))?;
 
             match id {
                 c @ ("v" | "vn") => {
                     let vec =
-                        Self::parse_vec3(part).map_err(|e| format!("line {}: {}", line_num, e))?;
+                        Self::parse_vec3(part).map_err(|e| format!("line {line_num}: {e}"))?;
 
                     if c == "v" {
                         vertices.push(vec);
@@ -53,11 +53,11 @@ impl ObjFile {
                 }
                 "f" => {
                     let face =
-                        Self::parse_face(part).map_err(|e| format!("line {}: {}", line_num, e))?;
+                        Self::parse_face(part).map_err(|e| format!("line {line_num}: {e}"))?;
                     faces.push(face);
                 }
                 unknown => {
-                    log::warn!(target: "Obj Decoder", "line {}: '{}'. we only know 'v', 'vn' or 'f'", line_num, unknown)
+                    log::warn!(target: "Obj Decoder", "line {line_num}: '{unknown}'. we only know 'v', 'vn' or 'f'")
                 }
             }
         }

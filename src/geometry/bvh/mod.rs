@@ -27,7 +27,7 @@ impl Tree {
     #[cold]
     pub fn new<F: Fn(u32) -> Aabb>(indices: &[u32], f: F) -> Self {
         let mut space = Aabb::empty();
-        let mut candidates = Vec::with_capacity(indices.len() as usize * 6);
+        let mut candidates = Vec::with_capacity(indices.len() * 6);
 
         for &index in indices {
             let bounds = f(index);
