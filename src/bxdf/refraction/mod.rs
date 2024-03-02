@@ -10,16 +10,15 @@ use crate::util::math::Lerp;
 use crate::Float;
 use serde::{Deserialize, Serialize};
 
-///! In optics, the **refractive index** of a material is a dimensionless number that describes
-///! how fast light travels through the material.
-///!
-///! This trait helps describe the different spectra of refractive indices, as different wavelengths
-///! refract differently.
-///!
-///! To complement the refractive index, this trait also specifies to return an **optional extinction
-///! coefficient**. The extinction coefficient describes how strongly a material absorbs light at given
-///! wavelength.
-
+/// In optics, the **refractive index** of a material is a dimensionless number that describes
+/// how fast light travels through the material.
+///
+/// This enum helps describe the different spectra of refractive indices, as different wavelengths
+/// refract differently in [RefractiveType::n].
+///
+/// To complement the refractive index, this enum also describes an **optional extinction coefficient**
+/// in [RefractiveType::k]. The extinction coefficient describes how strongly a material absorbs
+/// light at given wavelength.
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum RefractiveType {
     Vacuum,
