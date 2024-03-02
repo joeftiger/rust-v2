@@ -222,14 +222,15 @@ pub fn bxdf_to_world(v: Vec3) -> Rotation {
 }
 
 bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct BxDFFlag: u8 {
-        const NONE = 0;
+        //const NONE = 0;
         const REFLECTION = 1 << 0;
         const TRANSMISSION = 1 << 1;
         const DIFFUSE = 1 << 2;
         const GLOSSY = 1 << 3;
         const SPECULAR = 1 << 4;
-        const ALL = Self::REFLECTION.bits | Self::TRANSMISSION.bits | Self::DIFFUSE.bits | Self::GLOSSY.bits | Self::SPECULAR.bits;
+        //const ALL = Self::REFLECTION.bits | Self::TRANSMISSION.bits | Self::DIFFUSE.bits | Self::GLOSSY.bits | Self::SPECULAR.bits;
     }
 }
 

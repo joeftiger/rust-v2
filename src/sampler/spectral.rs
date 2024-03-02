@@ -3,12 +3,8 @@ use crate::{Spectrum, PACKET_SIZE};
 use core::ops::RangeBounds;
 use serde::{Deserialize, Serialize};
 
-thread_local! {
-    static RNG: fastrand::Rng = fastrand::Rng::with_seed(0);
-}
-
 fn rand(range: impl RangeBounds<usize>) -> usize {
-    RNG.with(|rng| rng.usize(range))
+    fastrand::usize(range)
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
