@@ -387,10 +387,6 @@ pub struct Intersection {
 }
 
 impl Intersection {
-    pub fn point(&self) -> Vec3 {
-        self.normal
-    }
-
     pub const fn new(point: Vec3, normal: Vec3, incoming: Vec3, t: Float) -> Self {
         Self {
             point,
