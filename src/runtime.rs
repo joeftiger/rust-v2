@@ -9,7 +9,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
 
-#[derive(Clone)]
 pub struct Runtime {
     pub renderer: Arc<Renderer>,
     pub tile_progress: Arc<AtomicUsize>,
@@ -17,7 +16,7 @@ pub struct Runtime {
     pub total_tiles: usize,
     pub passes: usize,
     pub cancel: Arc<AtomicBool>,
-    threadpool: Arc<Threadpool>,
+    threadpool: Threadpool,
 }
 
 impl Runtime {
@@ -38,11 +37,11 @@ impl Runtime {
         let cancel = Arc::new(AtomicBool::new(false));
         let threads = renderer.config.threads.unwrap_or_else(num_cpus::get);
         let c = cancel.clone();
-        let threadpool = Arc::new(Threadpool::new(
+        let threadpool = Threadpool::new(
             threads,
             None,
             Some(Box::new(move || c.store(true, Ordering::Relaxed))),
-        ));
+        );
 
         log::info!(target: "Runtime", "Creating runtime with {} threads", threads);
         let runtime = Self {
